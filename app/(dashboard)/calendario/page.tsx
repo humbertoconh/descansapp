@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { format, getDaysInMonth, startOfMonth, getDay, isToday } from 'date-fns'
 import { enviarEmail, templateNotificacion } from '@/lib/email'
-import { useSearchParams } from 'next/navigation'
 import { Suspense } from 'react'
 import { es } from 'date-fns/locale'
 export const dynamic = 'force-dynamic'
@@ -56,9 +55,9 @@ function CalendarioContent() {
   const [modalSoltar, setModalSoltar] = useState(false)
   const [diaSoltar, setDiaSoltar] = useState('')
   const [soltando, setSoltando] = useState(false)
-const searchParams = useSearchParams()
+  const [diaParam, setDiaParam] = useState<string | null>(null)
   const [listaEspera, setListaEspera] = useState<any[]>([])
-const cargar = async () => {
+  const cargar = async () => {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
     setMiId(user.id)
@@ -96,12 +95,20 @@ const cargar = async () => {
     return () => { supabase.removeChannel(channel) }
   }, [])
   useEffect(() => {
-    const dia = searchParams.get('dia')
-    if (dia && !loading) {
-      abrirDia(dia)
+    const params = new URLSearchParams(window.location.search)
+    const dia = params.get('dia')
+    if (dia) {
+      setDiaParam(dia)
       window.history.replaceState({}, '', '/calendario')
     }
-  }, [loading])
+  }, [])
+
+  useEffect(() => {
+    if (diaParam && !loading) {
+      abrirDia(diaParam)
+      setDiaParam(null)
+    }
+  }, [diaParam, loading])
 
   const colorPorUsuario: Record<string, string> = {}
   companyeros.forEach((c, i) => { colorPorUsuario[c.id] = COLORES[i % COLORES.length] })

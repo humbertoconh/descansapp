@@ -332,6 +332,9 @@ return (
   .modal { background: #fff; border-color: #e0d8d0; }
   .solicitud-card { background: #f5f0eb; border-color: #e0d8d0; }
   .barra-movil { display: flex !important; }
+  .dia-num { font-size: 1rem !important; }
+  .badge-pedido, .badge-ofrecido, .badge-espera, .badge-suelto { font-size: 0.7rem !important; padding: 1px 3px !important; }
+  .dia-semana { font-size: 0.75rem !important; }
 }
         @media (max-width: 500px) { .meses-grid { grid-template-columns: 1fr; } .cal-header { flex-direction: column; } }
       `}</style>

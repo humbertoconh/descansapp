@@ -127,6 +127,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           .menu-usuario { font-size: 0.8rem; color: #6a6058; padding: 0.5rem 1rem; border-top: 1px solid #2a2420; margin-top: 0.25rem; }
           .btn-salir-movil { background: transparent; border: 1px solid #2a2420; color: #6a6058; padding: 0.6rem 1rem; font-family: 'Bebas Neue', sans-serif; font-size: 0.85rem; letter-spacing: 1px; cursor: pointer; border-radius: 2px; text-align: left; }
           .notif-panel { right: 0; width: 100vw; border-radius: 0; }
+          .nav { background: #f5f0eb !important; border-bottom-color: #e0d8d0 !important; }
+.nav-logo { color: #c4a520 !important; }
+.hamburger { color: #1a1612 !important; }
+.menu-movil { background: #f5f0eb !important; border-bottom-color: #e0d8d0 !important; }
+.nav-link-movil { color: #4a4038 !important; }
+.nav-link-movil.active { color: #c4a520 !important; background: #ede8e0 !important; }
+.btn-salir-movil { color: #4a4038 !important; border-color: #e0d8d0 !important; }
+.menu-usuario { color: #4a4038 !important; border-top-color: #e0d8d0 !important; }
         }
       `}</style>
 

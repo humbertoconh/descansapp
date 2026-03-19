@@ -8,6 +8,7 @@ import { enviarEmail, templateNotificacion } from '@/lib/email'
 
 type Notificacion = {
   id: string
+  tipo: string
   titulo: string
   mensaje: string
   leida: boolean

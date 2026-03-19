@@ -7,6 +7,7 @@ import { enviarEmail, templateNotificacion } from '@/lib/email'
 import { useSearchParams } from 'next/navigation'
 import { Suspense } from 'react'
 import { es } from 'date-fns/locale'
+export const dynamic = 'force-dynamic'
 
 const FESTIVOS_2026 = [
   '2026-01-01','2026-01-06','2026-03-19','2026-04-02','2026-04-03',

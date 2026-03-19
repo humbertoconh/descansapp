@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 import { format, getDaysInMonth, startOfMonth, getDay, isToday } from 'date-fns'
 import { enviarEmail, templateNotificacion } from '@/lib/email'
 import { useSearchParams } from 'next/navigation'
+import { Suspense } from 'react'
 import { es } from 'date-fns/locale'
 
 const FESTIVOS_2026 = [
@@ -32,7 +33,7 @@ type Solicitud = {
   profiles?: { nombre: string; apellidos: string; chapa: string }
 }
 
-export default function CalendarioPage() {
+function CalendarioContent() {
   const supabase = createClient()
   const [solicitudes, setSolicitudes] = useState<Solicitud[]>([])
   const [companyeros, setCompanyeros] = useState<any[]>([])
@@ -727,5 +728,12 @@ const idFinal = diaOfrecidoId || diaOfrecidoIdFallback
         </div>
       )}
     </>
+  )
+}
+export default function CalendarioPage() {
+  return (
+    <Suspense fallback={<div style={{ background:'#0f0f0f', minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center', color:'#f5c518', fontFamily:'sans-serif', fontSize:'1.5rem', letterSpacing:'3px' }}>CARGANDO...</div>}>
+      <CalendarioContent />
+    </Suspense>
   )
 }

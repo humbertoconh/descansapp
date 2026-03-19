@@ -316,7 +316,23 @@ return (
         .dia-row { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.4rem; }
         .festivo-aviso { font-size: 0.72rem; color: #e05050; margin-top: 0.2rem; }
         .vacio-msg { color: #6a6058; font-size: 0.85rem; margin-top: 0.75rem; }
-        @media (max-width: 1100px) { .meses-grid { grid-template-columns: repeat(3, 1fr); } } @media (max-width: 750px) { .meses-grid { grid-template-columns: repeat(2, 1fr); } .cal-page { padding: 1rem; } } @media (max-width: 480px) { .meses-grid { grid-template-columns: 1fr; } .cal-page { padding: 0.75rem; } .cal-header h1 { font-size: 1.8rem; } .btn-nueva { font-size: 0.85rem; padding: 0.5rem 1rem; } }
+.barra-movil { display: none; position: fixed; bottom: 0; left: 0; right: 0; background: #1a1612; border-top: 1px solid #2a2420; padding: 0.5rem 1rem; gap: 0.5rem; z-index: 50; flex-wrap: wrap; justify-content: center; }
+.barra-movil button { flex: 1; min-width: 80px; padding: 0.5rem 0.5rem; font-family: 'Bebas Neue', sans-serif; font-size: 0.75rem; letter-spacing: 1px; border: none; border-radius: 2px; cursor: pointer; }
+        @media (max-width: 1100px) { .meses-grid { grid-template-columns: repeat(3, 1fr); } } @media (max-width: 750px) { .meses-grid { grid-template-columns: repeat(2, 1fr); } .cal-page { padding: 1rem; } } @media (max-width: 480px) { 
+  body { background: #f5f0eb !important; color: #1a1612 !important; }
+  .cal-page { padding: 0.75rem; padding-bottom: 80px; }
+  .cal-header h1 { font-size: 1.8rem; color: #1a1612; }
+  .btn-nueva { font-size: 0.85rem; padding: 0.5rem 1rem; }
+  .meses-grid { grid-template-columns: 1fr; }
+  .mes { background: #fff; border-color: #e0d8d0; }
+  .mes-titulo { color: #c4a520; }
+  .dia { background: #f0ebe5; color: #4a4038; }
+  .dia.festivo { background: #fde8e8; color: #c04040; }
+  .dia.hoy { border-color: #c4a520 !important; }
+  .modal { background: #fff; border-color: #e0d8d0; }
+  .solicitud-card { background: #f5f0eb; border-color: #e0d8d0; }
+  .barra-movil { display: flex !important; }
+}
         @media (max-width: 500px) { .meses-grid { grid-template-columns: 1fr; } .cal-header { flex-direction: column; } }
       `}</style>
 <div className="cal-page">
@@ -735,6 +751,11 @@ const idFinal = diaOfrecidoId || diaOfrecidoIdFallback
           </div>
         </div>
       )}
+<div className="barra-movil">
+        <button style={{ background: '#f5c518', color: '#0f0f0f' }} onClick={() => setModalNueva(true)}>+ SOLICITUD</button>
+        <button style={{ background: '#fb923c', color: '#0f0f0f' }} onClick={() => setModalSoltar(true)}>SOLTAR DÍA</button>
+        <button style={{ background: '#a78bfa', color: '#0f0f0f' }} onClick={buscarCadenas}>CADENAS</button>
+      </div>
     </>
   )
 }

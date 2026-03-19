@@ -76,23 +76,23 @@ export default function RegistroPage() {
         .panel-izq::before { content: ''; position: absolute; inset: 0; background: repeating-linear-gradient(0deg, transparent, transparent 39px, rgba(255,200,50,0.06) 39px, rgba(255,200,50,0.06) 40px), repeating-linear-gradient(90deg, transparent, transparent 39px, rgba(255,200,50,0.06) 39px, rgba(255,200,50,0.06) 40px); }
         .panel-logo { position: relative; z-index: 1; }
         .panel-logo h1 { font-family: 'Bebas Neue', sans-serif; font-size: 5rem; line-height: 0.9; color: #f5c518; letter-spacing: 2px; }
-        .panel-logo p { margin-top: 1rem; color: #8a8070; font-size: 0.95rem; max-width: 280px; line-height: 1.6; }
+        .panel-logo p { margin-top: 1rem; color: #e8e0d4; font-size: 0.95rem; max-width: 280px; line-height: 1.6; }
         .grupos-list { margin-top: 2.5rem; display: flex; flex-direction: column; gap: 0.5rem; }
-        .grupo-item { display: flex; align-items: center; gap: 0.75rem; font-size: 0.8rem; color: #6a6058; }
+        .grupo-item { display: flex; align-items: center; gap: 0.75rem; font-size: 0.8rem; color: #c8c0b4; }
         .grupo-badge { background: #2a2420; border: 1px solid #3a3028; padding: 0.15rem 0.5rem; font-size: 0.75rem; color: #f5c518; font-family: 'Bebas Neue', sans-serif; letter-spacing: 1px; }
         .panel-der { background: #141210; display: flex; align-items: center; justify-content: center; padding: 3rem 4rem; }
         .form-wrapper { width: 100%; max-width: 420px; }
         .form-header { margin-bottom: 2.5rem; }
         .form-header h2 { font-family: 'Bebas Neue', sans-serif; font-size: 2.2rem; letter-spacing: 2px; color: #e8e0d4; }
-        .form-header p { margin-top: 0.4rem; color: #6a6058; font-size: 0.875rem; }
+        .form-header p { margin-top: 0.4rem; color: #c8c0b4; font-size: 0.875rem; }
         .form-grid { display: grid; gap: 1rem; }
         .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
         .field { display: flex; flex-direction: column; gap: 0.35rem; }
-        .field label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1.5px; color: #8a8070; font-weight: 500; }
+        .field label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1.5px; color: #e8e0d4; font-weight: 500; }
         .field input { background: #1e1a16; border: 1px solid #2e2820; color: #e8e0d4; padding: 0.75rem 0.9rem; font-family: 'DM Sans', sans-serif; font-size: 0.9rem; outline: none; transition: border-color 0.15s; border-radius: 2px; }
         .field input:focus { border-color: #f5c518; background: #221e18; }
-        .field input::placeholder { color: #4a4038; }
-        .field .hint { font-size: 0.7rem; color: #4a4038; margin-top: 0.2rem; }
+        .field input::placeholder { color: #a8a098; }
+        .field .hint { font-size: 0.7rem; color: #a8a098; margin-top: 0.2rem; }
         .grupo-preview { display: flex; align-items: center; gap: 0.5rem; margin-top: 0.35rem; font-size: 0.75rem; }
         .grupo-preview .dot { width: 6px; height: 6px; border-radius: 50%; background: #f5c518; animation: pulse 1.5s infinite; }
         .grupo-preview span { color: #f5c518; font-weight: 500; }
@@ -103,7 +103,7 @@ export default function RegistroPage() {
         .btn-submit:disabled { opacity: 0.5; cursor: not-allowed; }
         .divider { display: flex; align-items: center; gap: 0.75rem; color: #3a3028; font-size: 0.7rem; letter-spacing: 1px; text-transform: uppercase; }
         .divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: #2a2420; }
-        .login-link { text-align: center; margin-top: 1.5rem; font-size: 0.82rem; color: #6a6058; }
+        .login-link { text-align: center; margin-top: 1.5rem; font-size: 0.82rem; color: #c8c0b4; }
         .login-link a { color: #f5c518; text-decoration: none; font-weight: 500; }
         @media (max-width: 768px) { .page { grid-template-columns: 1fr; } .panel-izq { display: none; } .panel-der { padding: 2rem 1.5rem; } }
       `}</style>
@@ -196,9 +196,9 @@ function PantallaPendiente({ nombre }: { nombre: string }) {
         @keyframes balanceo { 0%, 100% { transform: rotate(-5deg); } 50% { transform: rotate(5deg); } }
         .pendiente-card h2 { font-family: 'Bebas Neue', sans-serif; font-size: 2.5rem; letter-spacing: 3px; color: #e8e0d4; margin-bottom: 0.75rem; }
         .pendiente-card .nombre { color: #f5c518; }
-        .pendiente-card p { color: #8a8070; font-size: 0.9rem; line-height: 1.7; margin-bottom: 2rem; }
+        .pendiente-card p { color: #e8e0d4; font-size: 0.9rem; line-height: 1.7; margin-bottom: 2rem; }
         .pasos { text-align: left; background: #1a1612; border: 1px solid #2a2420; border-left: 3px solid #f5c518; padding: 1.25rem 1.5rem; display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 2rem; border-radius: 2px; }
-        .paso { display: flex; align-items: flex-start; gap: 0.75rem; font-size: 0.85rem; color: #8a8070; }
+        .paso { display: flex; align-items: flex-start; gap: 0.75rem; font-size: 0.85rem; color: #e8e0d4; }
         .paso-num { background: #2a2420; color: #f5c518; font-family: 'Bebas Neue', sans-serif; font-size: 0.9rem; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; border-radius: 2px; }
         .btn-login { display: inline-block; background: transparent; border: 1px solid #f5c518; color: #f5c518; padding: 0.75rem 2rem; font-family: 'Bebas Neue', sans-serif; font-size: 1rem; letter-spacing: 2px; text-decoration: none; transition: background 0.15s, color 0.15s; border-radius: 2px; }
         .btn-login:hover { background: #f5c518; color: #0f0f0f; }

@@ -61,23 +61,23 @@ export default function LoginPage() {
         .panel-izq::before { content: ''; position: absolute; inset: 0; background: repeating-linear-gradient(0deg, transparent, transparent 39px, rgba(255,200,50,0.06) 39px, rgba(255,200,50,0.06) 40px), repeating-linear-gradient(90deg, transparent, transparent 39px, rgba(255,200,50,0.06) 39px, rgba(255,200,50,0.06) 40px); }
         .panel-logo { position: relative; z-index: 1; }
         .panel-logo h1 { font-family: 'Bebas Neue', sans-serif; font-size: 5rem; line-height: 0.9; color: #f5c518; letter-spacing: 2px; }
-        .panel-logo p { margin-top: 1rem; color: #8a8070; font-size: 0.95rem; max-width: 280px; line-height: 1.6; }
+        .panel-logo p { margin-top: 1rem; color: #e8e0d4; font-size: 0.95rem; max-width: 280px; line-height: 1.6; }
         .panel-der { background: #141210; display: flex; align-items: center; justify-content: center; padding: 3rem 4rem; }
         .form-wrapper { width: 100%; max-width: 380px; }
         .form-header { margin-bottom: 2.5rem; }
         .form-header h2 { font-family: 'Bebas Neue', sans-serif; font-size: 2.2rem; letter-spacing: 2px; color: #e8e0d4; }
-        .form-header p { margin-top: 0.4rem; color: #6a6058; font-size: 0.875rem; }
+        .form-header p { margin-top: 0.4rem; color: #c8c0b4; font-size: 0.875rem; }
         .form-grid { display: grid; gap: 1rem; }
         .field { display: flex; flex-direction: column; gap: 0.35rem; }
-        .field label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1.5px; color: #8a8070; font-weight: 500; }
+        .field label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1.5px; color: #e8e0d4; font-weight: 500; }
         .field input { background: #1e1a16; border: 1px solid #2e2820; color: #e8e0d4; padding: 0.75rem 0.9rem; font-family: 'DM Sans', sans-serif; font-size: 0.9rem; outline: none; transition: border-color 0.15s; border-radius: 2px; }
         .field input:focus { border-color: #f5c518; background: #221e18; }
-        .field input::placeholder { color: #4a4038; }
+        .field input::placeholder { color: #a8a098; }
         .error-box { background: #2a1210; border: 1px solid #5a2020; border-left: 3px solid #e05050; padding: 0.75rem 1rem; font-size: 0.85rem; color: #e08080; border-radius: 2px; }
         .btn-submit { width: 100%; background: #f5c518; color: #0f0f0f; border: none; padding: 0.9rem; font-family: 'Bebas Neue', sans-serif; font-size: 1.1rem; letter-spacing: 2px; cursor: pointer; transition: background 0.15s; border-radius: 2px; margin-top: 0.5rem; }
         .btn-submit:hover:not(:disabled) { background: #ffd740; }
         .btn-submit:disabled { opacity: 0.5; cursor: not-allowed; }
-        .registro-link { text-align: center; margin-top: 1.5rem; font-size: 0.82rem; color: #6a6058; }
+        .registro-link { text-align: center; margin-top: 1.5rem; font-size: 0.82rem; color: #c8c0b4; }
         .registro-link a { color: #f5c518; text-decoration: none; font-weight: 500; }
         @media (max-width: 768px) { .page { grid-template-columns: 1fr; } .panel-izq { display: none; } .panel-der { padding: 2rem 1.5rem; } }
       `}</style>

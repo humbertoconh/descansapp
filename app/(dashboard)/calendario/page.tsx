@@ -333,6 +333,17 @@ return (
   .solicitud-card { background: #f5f0eb; border-color: #e0d8d0; }
   .barra-movil { display: flex !important; }
   .dia-num { font-size: 1rem !important; }
+  .overlay { align-items: flex-end !important; padding: 0 !important; }
+.modal { border-radius: 12px 12px 0 0 !important; max-height: 85vh !important; border-left: none !important; border-top: 3px solid #c4a520 !important; }
+.field input[type=date] { background: #f0ebe5 !important; border-color: #d0c8c0 !important; color: #1a1612 !important; }
+.btn-add { background: #f0ebe5 !important; border-color: #d0c8c0 !important; color: #4a4038 !important; }
+.modal h3 { color: #c4a520 !important; }
+.seccion-titulo { color: #4a4038 !important; }
+.solicitud-card { background: #f0ebe5 !important; border-color: #d0c8c0 !important; }
+.vacio-msg { color: #4a4038 !important; }
+.btn-gris { color: #4a4038 !important; border-color: #d0c8c0 !important; }
+.btn-rojo { color: #c04040 !important; border-color: #c04040 !important; }
+.chip { background: #e8e0d8 !important; border-color: #d0c8c0 !important; color: #1a1612 !important; }
   .badge-pedido, .badge-ofrecido, .badge-espera, .badge-suelto { font-size: 0.7rem !important; padding: 1px 3px !important; }
   .dia-semana { font-size: 0.75rem !important; }
 }
@@ -755,9 +766,9 @@ const idFinal = diaOfrecidoId || diaOfrecidoIdFallback
         </div>
       )}
 <div className="barra-movil">
-        <button style={{ background: '#f5c518', color: '#0f0f0f', fontSize: '0.7rem' }} onClick={() => setModalNueva(true)}>+ SOLICITUD</button>
-        <button style={{ background: '#fb923c', color: '#0f0f0f', fontSize: '0.7rem' }} onClick={() => setModalSoltar(true)}>− SOLTAR DÍA</button>
-        <button style={{ background: '#a78bfa', color: '#fff', fontSize: '0.7rem' }} onClick={buscarCadenas}>🔗 CADENAS</button>
+       <button style={{ background: '#f5c518', color: '#0f0f0f', fontSize: '0.85rem' }} onClick={() => setModalNueva(true)}>+ SOLICITUD</button>
+        <button style={{ background: '#fb923c', color: '#0f0f0f', fontSize: '0.85rem' }} onClick={() => setModalSoltar(true)}>− SOLTAR DÍA</button>
+        <button style={{ background: '#a78bfa', color: '#0f0f0f', fontSize: '0.85rem' }} onClick={buscarCadenas}>🔗 CADENAS</button>
       </div>
     </>
   )

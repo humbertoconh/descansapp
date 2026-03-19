@@ -115,7 +115,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         .hamburger { display: none; background: none; border: none; color: #e8e0d4; cursor: pointer; font-size: 1.5rem; padding: 0.25rem; }
         .menu-movil { display: none; }
         @media (max-width: 640px) {
-          .nav { padding: 0 1rem; }
+          .nav { padding: 0 1rem; justify-content: space-between; }
+.nav-centro { display: flex !important; position: absolute; left: 50%; transform: translateX(-50%); font-size: 0.8rem; color: #4a4038; }
+.nav-centro span { color: #c4a520; font-weight: 500; }
           .nav-links { display: none; }
           .nav-right { display: none; }
           .hamburger { display: block; }
@@ -217,6 +219,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <div className="nav-usuario">Hola, <span>{nombre}</span></div>
           <button className="btn-salir" onClick={cerrarSesion}>SALIR</button>
         </div>
+<div className="nav-centro" style={{ display: 'none' }}>Hola, <span>{nombre}</span></div>
         <button className="hamburger" onClick={() => setMenuAbierto(!menuAbierto)}>
           {menuAbierto ? '✕' : '☰'}
         </button>

@@ -755,9 +755,9 @@ const idFinal = diaOfrecidoId || diaOfrecidoIdFallback
         </div>
       )}
 <div className="barra-movil">
-        <button style={{ background: '#f5c518', color: '#0f0f0f' }} onClick={() => setModalNueva(true)}>+ SOLICITUD</button>
-        <button style={{ background: '#fb923c', color: '#0f0f0f' }} onClick={() => setModalSoltar(true)}>SOLTAR DÍA</button>
-        <button style={{ background: '#a78bfa', color: '#0f0f0f' }} onClick={buscarCadenas}>CADENAS</button>
+        <button style={{ background: '#f5c518', color: '#0f0f0f', fontSize: '0.7rem' }} onClick={() => setModalNueva(true)}>+ SOLICITUD</button>
+        <button style={{ background: '#fb923c', color: '#0f0f0f', fontSize: '0.7rem' }} onClick={() => setModalSoltar(true)}>− SOLTAR DÍA</button>
+        <button style={{ background: '#a78bfa', color: '#fff', fontSize: '0.7rem' }} onClick={buscarCadenas}>🔗 CADENAS</button>
       </div>
     </>
   )

@@ -380,7 +380,7 @@ return (
               </div>
               <div className="leyenda-item">
                 <div className="leyenda-dot" style={{ background: '#a78bfa' }} />
-                Día suelto
+                Día disponible
               </div>
              
             </div>

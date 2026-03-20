@@ -116,6 +116,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         .menu-movil { display: none; }
         @media (max-width: 640px) {
           .nav { padding: 0 1rem; justify-content: space-between; }
+.notif-panel { background: #fff !important; border-color: #e0d8d0 !important; right: 0 !important; width: calc(100vw - 2rem) !important; }
+.notif-item { border-bottom-color: #e0d8d0 !important; }
+.notif-item.no-leida { border-left-color: #c4a520 !important; }
+.notif-titulo { color: #1a1612 !important; }
+.notif-mensaje { color: #4a4038 !important; }
+.notif-fecha { color: #8a8070 !important; }
+.notif-header { color: #1a1612 !important; border-bottom-color: #e0d8d0 !important; }
+.notif-vacia { color: #8a8070 !important; }
 .nav-centro { display: flex !important; position: absolute; left: 50%; transform: translateX(-50%); font-size: 0.8rem; color: #4a4038; }
 .nav-centro span { color: #c4a520; font-weight: 500; }
           .nav-links { display: none; }
@@ -280,6 +288,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     </div>
   )}
 </div>
+<div className="nav-centro">Hola, <span>{nombre}</span></div>
 <button className="hamburger" onClick={() => setMenuAbierto(!menuAbierto)}>
           {menuAbierto ? '✕' : '☰'}
         </button>

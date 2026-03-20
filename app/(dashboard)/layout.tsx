@@ -120,6 +120,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 .nav-centro span { color: #c4a520; font-weight: 500; }
           .nav-links { display: none; }
           .nav-right { display: none; }
+          .nav-campana-movil { display: flex !important; }
           .hamburger { display: block; }
           .menu-movil { display: flex; flex-direction: column; background: #141210; border-bottom: 1px solid #2a2420; padding: 1rem; gap: 0.5rem; }
           .menu-movil.cerrado { display: none; }
@@ -220,7 +221,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <button className="btn-salir" onClick={cerrarSesion}>SALIR</button>
         </div>
 <div className="nav-centro" style={{ display: 'none' }}>Hola, <span>{nombre}</span></div>
-        <button className="hamburger" onClick={() => setMenuAbierto(!menuAbierto)}>
+        <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+  <button id="notif-btn" className="notif-btn" onClick={() => setMostrarNotifs(!mostrarNotifs)} style={{ color: '#1a1612', fontSize: '1.3rem' }}>
+    🔔
+    {noLeidas > 0 && <span className="notif-badge">{noLeidas}</span>}
+  </button>
+  {mostrarNotifs && (
+    <div id="notif-panel" className="notif-panel" style={{ right: 0 }}>
+      {/* panel notificaciones móvil */}
+    </div>
+  )}
+</div>
+<button className="hamburger" onClick={() => setMenuAbierto(!menuAbierto)}>
           {menuAbierto ? '✕' : '☰'}
         </button>
       </nav>

@@ -158,7 +158,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         .notif-vacia { padding: 2rem; text-align: center; color: #4a4038; font-size: 0.85rem; }
         .hamburger { display: none; background: none; border: none; color: #e8e0d4; cursor: pointer; font-size: 1.5rem; padding: 0.25rem; }
         .menu-movil { display: none; }
-        @media (max-width: 640px) {
+        @media (max-width: 768px) {
           .nav { padding: 0 1rem; justify-content: space-between; background: #f5f0eb; border-bottom-color: #e0d8d0; }
           .nav-logo { color: #c4a520; }
           .nav-links { display: none; }

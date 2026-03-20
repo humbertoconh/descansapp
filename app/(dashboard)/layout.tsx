@@ -220,7 +220,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <div className="nav-usuario">Hola, <span>{nombre}</span></div>
           <button className="btn-salir" onClick={cerrarSesion}>SALIR</button>
         </div>
-<div className="nav-centro">Hola, <span>{nombre}</span></div>
+
         <div style={{ position: 'relative', display: 'flex', alignItems: 'center', marginRight: '0.5rem' }}>
   <button id="notif-btn" className="notif-btn" onClick={() => setMostrarNotifs(!mostrarNotifs)} style={{ color: '#1a1612', fontSize: '1.3rem' }}>
     🔔
@@ -228,7 +228,55 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   </button>
   {mostrarNotifs && (
     <div id="notif-panel" className="notif-panel" style={{ right: 0 }}>
-      {/* panel notificaciones móvil */}
+      <div className="notif-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span>NOTIFICACIONES</span>
+                {notifs.some(n => n.tipo === 'completado' || n.tipo === 'dia_asignado' || n.tipo === 'dia_soltado' || n.tipo === 'cadena_completada' || (n.tipo === 'cadena' && n.leida) || (n.tipo === 'aceptacion' && n.leida)) && (
+                  <button style={{ background: 'none', border: '1px solid #2a2420', color: '#6a6058', cursor: 'pointer', fontSize: '0.65rem', padding: '0.2rem 0.5rem', borderRadius: '2px', fontFamily: "'Bebas Neue', sans-serif", letterSpacing: '1px' }}
+                    onClick={async (e) => {
+                      e.stopPropagation()
+                      const supabase = createClient()
+                      const borrables = notifs.filter(n => n.tipo === 'completado' || n.tipo === 'dia_asignado' || n.tipo === 'dia_soltado' || n.tipo === 'cadena_completada' || (n.tipo === 'cadena' && n.leida) || (n.tipo === 'aceptacion' && n.leida))
+                      await supabase.from('notificaciones').delete().in('id', borrables.map(n => n.id))
+                      setNotifs(prev => prev.filter(n => !borrables.find(b => b.id === n.id)))
+                    }}>BORRAR LEÍDAS</button>
+                )}
+              </div>
+              {notifs.length === 0 ? (
+                <div className="notif-vacia">Sin notificaciones</div>
+              ) : (
+                notifs.map(n => (
+                  <div key={n.id} className={`notif-item${!n.leida ? ' no-leida' : ''}`} onClick={() => marcarLeida(n)}>
+                    <div className="notif-titulo">{n.titulo}</div>
+                    <div className="notif-mensaje">{n.mensaje}</div>
+                    {n.tipo === 'cadena' && n.referencia_id && (
+                      <button style={{ marginTop: '0.4rem', background: '#a78bfa', color: '#0f0f0f', border: 'none', padding: '0.3rem 0.8rem', fontFamily: "'Bebas Neue', sans-serif", fontSize: '0.75rem', letterSpacing: '1px', cursor: 'pointer', borderRadius: '2px' }}
+                        onClick={async (e) => {
+                          e.stopPropagation()
+                          const supabase = createClient()
+                          const { data: { user } } = await supabase.auth.getUser()
+                          if (user) {
+                            await supabase.rpc('confirmar_cadena', { p_cadena_id: n.referencia_id, p_user_id: user.id })
+                            await marcarLeida(n)
+                          }
+                        }}>
+                        ✓ CONFIRMAR CADENA
+                      </button>
+                    )}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.2rem' }}>
+                      <div className="notif-fecha">{new Date(n.created_at).toLocaleDateString('es-ES')}</div>
+                      {(n.tipo === 'completado' || n.tipo === 'dia_asignado' || n.tipo === 'dia_soltado' || n.tipo === 'cadena_completada' || (n.tipo === 'cadena' && n.leida) || (n.tipo === 'aceptacion' && n.leida)) && (
+                        <button style={{ background: 'none', border: 'none', color: '#4a4038', cursor: 'pointer', fontSize: '0.75rem', padding: '0 0.25rem' }}
+                          onClick={async (e) => {
+                            e.stopPropagation()
+                            const supabase = createClient()
+                            await supabase.from('notificaciones').delete().eq('id', n.id)
+                            setNotifs(prev => prev.filter(notif => notif.id !== n.id))
+                          }}>✕</button>
+                      )}
+                    </div>
+                  </div>
+                ))
+              )}
     </div>
   )}
 </div>

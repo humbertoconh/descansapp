@@ -124,7 +124,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 .notif-fecha { color: #8a8070 !important; }
 .notif-header { color: #1a1612 !important; border-bottom-color: #e0d8d0 !important; }
 .notif-vacia { color: #8a8070 !important; }
-.nav-centro { display: flex !important; position: absolute; left: 50%; transform: translateX(-50%); font-size: 0.8rem; color: #4a4038; }
+.nav-centro { display: flex !important; position: absolute; left: 50%; transform: translateX(-50%); font-size: 0.8rem; color: #4a4038; white-space: nowrap; }
 .nav-centro span { color: #c4a520; font-weight: 500; }
           .nav-links { display: none; }
           .nav-right { display: none; }
@@ -288,7 +288,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     </div>
   )}
 </div>
-<div className="nav-centro">Hola, <span> {nombre}</span></div>
+<div className="nav-centro" style={{ pointerEvents: 'none' }}>Hola, <span>{nombre}</span></div>
 <button className="hamburger" onClick={() => setMenuAbierto(!menuAbierto)}>
           {menuAbierto ? '✕' : '☰'}
         </button>

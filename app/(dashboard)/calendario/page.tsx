@@ -78,7 +78,7 @@ function CalendarioContent() {
     const { data: acepts } = await supabase.from('aceptaciones').select('*, profiles(nombre, apellidos), dias_ofrecidos(fecha)').in('solicitud_id', (sols || []).map((s: any) => s.id))
     setAceptaciones(acepts || [])
     const { data: sueltos, error: errorSueltos } = await supabase.from('dias_sueltos').select('id, user_id, fecha, estado, created_at, profiles!dias_sueltos_user_id_fkey(nombre, apellidos)').eq('estado', 'disponible')
-    console.log('SUELTOS:', sueltos, 'ERROR:', errorSueltos)
+    
     setDiasSueltos(sueltos || [])
     const { data: perfil } = await supabase.from('profiles').select('is_admin').eq('id', user.id).single()
     setEsAdmin(perfil?.is_admin || false)

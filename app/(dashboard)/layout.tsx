@@ -229,26 +229,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <button className="btn-salir" onClick={cerrarSesion}>SALIR</button>
         </div>
 
-        <div style={{ position: 'relative', display: 'flex', alignItems: 'center', marginRight: '0.5rem' }}>
-  <button id="notif-btn" className="notif-btn" onClick={() => setMostrarNotifs(!mostrarNotifs)} style={{ color: '#1a1612', fontSize: '1.3rem' }}>
-    🔔
-    {noLeidas > 0 && <span className="notif-badge">{noLeidas}</span>}
-  </button>
-  {mostrarNotifs && (
-    <div id="notif-panel" className="notif-panel" style={{ right: 0 }}>
-      <div className="notif-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span>NOTIFICACIONES</span>
-                {notifs.some(n => n.tipo === 'completado' || n.tipo === 'dia_asignado' || n.tipo === 'dia_soltado' || n.tipo === 'cadena_completada' || (n.tipo === 'cadena' && n.leida) || (n.tipo === 'aceptacion' && n.leida)) && (
-                  <button style={{ background: 'none', border: '1px solid #2a2420', color: '#6a6058', cursor: 'pointer', fontSize: '0.65rem', padding: '0.2rem 0.5rem', borderRadius: '2px', fontFamily: "'Bebas Neue', sans-serif", letterSpacing: '1px' }}
-                    onClick={async (e) => {
-                      e.stopPropagation()
-                      const supabase = createClient()
-                      const borrables = notifs.filter(n => n.tipo === 'completado' || n.tipo === 'dia_asignado' || n.tipo === 'dia_soltado' || n.tipo === 'cadena_completada' || (n.tipo === 'cadena' && n.leida) || (n.tipo === 'aceptacion' && n.leida))
-                      await supabase.from('notificaciones').delete().in('id', borrables.map(n => n.id))
-                      setNotifs(prev => prev.filter(n => !borrables.find(b => b.id === n.id)))
-                    }}>BORRAR LEÍDAS</button>
-                )}
-              </div>
+   
               {notifs.length === 0 ? (
                 <div className="notif-vacia">Sin notificaciones</div>
               ) : (
@@ -289,9 +270,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   )}
 </div>
 <div className="nav-centro" style={{ pointerEvents: 'none' }}>Hola, <span>{nombre}</span></div>
-<button className="hamburger" onClick={() => setMenuAbierto(!menuAbierto)}>
+<div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+  <button id="notif-btn-movil" className="notif-btn" onClick={() => setMostrarNotifs(!mostrarNotifs)} style={{ color: '#1a1612', fontSize: '1.3rem', display: 'none' }} className="notif-movil">
+    🔔
+    {noLeidas > 0 && <span className="notif-badge">{noLeidas}</span>}
+  </button>
+  <button className="hamburger" onClick={() => setMenuAbierto(!menuAbierto)}>
           {menuAbierto ? '✕' : '☰'}
         </button>
+</div>
       </nav>
 
       <div className={`menu-movil${menuAbierto ? '' : ' cerrado'}`}>

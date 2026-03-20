@@ -319,7 +319,24 @@ return (
         .vacio-msg { color: #6a6058; font-size: 0.85rem; margin-top: 0.75rem; }
 .barra-movil { display: none; position: fixed; bottom: 0; left: 0; right: 0; background: #1a1612; border-top: 1px solid #2a2420; padding: 0.5rem 1rem; gap: 0.5rem; z-index: 50; flex-wrap: wrap; justify-content: center; }
 .barra-movil button { flex: 1; min-width: 80px; padding: 0.5rem 0.5rem; font-family: 'Bebas Neue', sans-serif; font-size: 0.75rem; letter-spacing: 1px; border: none; border-radius: 2px; cursor: pointer; }
-        @media (max-width: 1100px) { .meses-grid { grid-template-columns: repeat(3, 1fr); } } } } @media (max-width: 900px) { .meses-grid { grid-template-columns: repeat(2, 1fr); } .cal-page { padding: 1rem; } } @media (max-width: 768px) {
+        @media (max-width: 1100px) { .meses-grid { grid-template-columns: repeat(3, 1fr); } }
+@media (max-width: 900px) {
+  body { background: #f5f0eb !important; color: #1a1612 !important; }
+  .meses-grid { grid-template-columns: repeat(2, 1fr); }
+  .cal-page { padding: 1rem; padding-bottom: 80px; }
+  .mes { background: #fff; border-color: #e0d8d0; }
+  .mes-titulo { color: #c4a520; }
+  .dia { background: #f0ebe5; color: #4a4038; }
+  .dia.festivo { background: #fde8e8; color: #c04040; }
+  .dia.hoy { border-color: #c4a520 !important; }
+  .barra-movil { display: flex !important; }
+}
+@media (max-width: 500px) {
+  .meses-grid { grid-template-columns: 1fr; }
+  .cal-header { flex-direction: column; }
+  .cal-header h1 { font-size: 1.8rem; color: #1a1612; }
+}
+@media (max-width: 768px) {
   body { background: #f5f0eb !important; color: #1a1612 !important; }  
   body { background: #f5f0eb !important; color: #1a1612 !important; }
 .mes { background: #fff; border-color: #e0d8d0; }
@@ -368,7 +385,7 @@ return (
   .badge-pedido, .badge-ofrecido, .badge-espera, .badge-suelto { font-size: 0.7rem !important; padding: 1px 3px !important; }
   .dia-semana { font-size: 0.75rem !important; }
 }
-        @media (max-width: 500px) { .meses-grid { grid-template-columns: 1fr; } .cal-header { flex-direction: column; } }
+        
       `}</style>
 <div className="cal-page">
         <div className="cal-header">

@@ -216,7 +216,7 @@ const apuntarseListaEspera = async (fecha: string) => {
       alert('Ya estás en 5 listas de espera. Quítate de alguna antes de apuntarte a otra.')
       return
     }
-    await supabase.from('lista_espera').insert({ user_id: miId, dia_pedido: fecha })
+    await supabase.rpc('apuntarse_lista_espera', { p_user_id: miId, p_fecha: fecha })
     await cargar()
     setModalDia(null)
   }

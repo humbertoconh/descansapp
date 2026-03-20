@@ -165,6 +165,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           .nav-right { display: none; }
           .hamburger { display: block; color: #1a1612; }
           .notif-btn-movil { display: flex !important; }
+.nav-centro-movil { display: flex !important; }
           .menu-movil { display: flex; flex-direction: column; background: #f5f0eb; border-bottom: 1px solid #e0d8d0; padding: 1rem; gap: 0.5rem; }
           .menu-movil.cerrado { display: none; }
           .nav-link-movil { font-family: 'Bebas Neue', sans-serif; font-size: 1rem; letter-spacing: 2px; color: #4a4038; text-decoration: none; padding: 0.75rem 1rem; border-radius: 2px; }

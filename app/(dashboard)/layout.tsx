@@ -115,6 +115,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         .hamburger { display: none; background: none; border: none; color: #e8e0d4; cursor: pointer; font-size: 1.5rem; padding: 0.25rem; }
         .menu-movil { display: none; }
         @media (max-width: 640px) {
+#notif-btn { display: flex !important; color: #1a1612 !important; }
           .nav { padding: 0 1rem; justify-content: space-between; }
 .notif-panel { background: #fff !important; border-color: #e0d8d0 !important; position: fixed !important; left: 1rem !important; right: 1rem !important; top: 56px !important; width: auto !important; }
 .notif-item { border-bottom-color: #e0d8d0 !important; }
@@ -271,10 +272,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 </div>
 <div className="nav-centro" style={{ pointerEvents: 'none' }}>Hola, <span>{nombre}</span></div>
 <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-  <button id="notif-btn-movil" className="notif-btn" onClick={() => setMostrarNotifs(!mostrarNotifs)} style={{ color: '#1a1612', fontSize: '1.3rem', display: 'none' }} className="notif-movil">
-    🔔
-    {noLeidas > 0 && <span className="notif-badge">{noLeidas}</span>}
-  </button>
+
   <button className="hamburger" onClick={() => setMenuAbierto(!menuAbierto)}>
           {menuAbierto ? '✕' : '☰'}
         </button>

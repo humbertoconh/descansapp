@@ -319,9 +319,29 @@ return (
         .vacio-msg { color: #6a6058; font-size: 0.85rem; margin-top: 0.75rem; }
 .barra-movil { display: none; position: fixed; bottom: 0; left: 0; right: 0; background: #1a1612; border-top: 1px solid #2a2420; padding: 0.5rem 1rem; gap: 0.5rem; z-index: 50; flex-wrap: wrap; justify-content: center; }
 .barra-movil button { flex: 1; min-width: 80px; padding: 0.5rem 0.5rem; font-family: 'Bebas Neue', sans-serif; font-size: 0.75rem; letter-spacing: 1px; border: none; border-radius: 2px; cursor: pointer; }
-        @media (max-width: 1100px) { .meses-grid { grid-template-columns: repeat(3, 1fr); } } @media (max-width: 900px) { .meses-grid { grid-template-columns: repeat(2, 1fr); } .cal-page { padding: 1rem; } } @media (max-width: 768px) {
+        @media (max-width: 1100px) { .meses-grid { grid-template-columns: repeat(3, 1fr); } } @media (max-width: 900px) { .meses-grid { grid-template-columns: repeat(2, 1fr); } .cal-page { padding: 1rem; } } @media (max-width: 900px) {
+  body { background: #f5f0eb !important; color: #1a1612 !important; }  
   body { background: #f5f0eb !important; color: #1a1612 !important; }
-  .cal-page { padding: 0.75rem; padding-bottom: 80px; }
+.mes { background: #fff; border-color: #e0d8d0; }
+.mes-titulo { color: #c4a520; }
+.dia { background: #f0ebe5; color: #4a4038; }
+.dia.festivo { background: #fde8e8; color: #c04040; }
+.dia.hoy { border-color: #c4a520 !important; }
+.modal { background: #fff; border-color: #e0d8d0; border-left-color: #c4a520; }
+.solicitud-card { background: #f5f0eb; border-color: #e0d8d0; }
+.overlay { align-items: flex-end !important; padding: 0 !important; }
+.modal { border-radius: 12px 12px 0 0 !important; max-height: 85vh !important; border-left: none !important; border-top: 3px solid #c4a520 !important; }
+.field input[type=date] { background: #f0ebe5 !important; border-color: #d0c8c0 !important; color: #1a1612 !important; }
+.btn-gris { color: #4a4038 !important; border-color: #d0c8c0 !important; }
+.btn-rojo { color: #c04040 !important; border-color: #c04040 !important; }
+.chip { background: #e8e0d8 !important; border-color: #d0c8c0 !important; color: #1a1612 !important; }
+.vacio-msg { color: #4a4038 !important; }
+.seccion-titulo { color: #4a4038 !important; }
+.modal h3 { color: #c4a520 !important; }
+.barra-movil { display: flex !important; background: #1a1612; }
+
+
+.cal-page { padding: 0.75rem; padding-bottom: 80px; }
   .cal-header h1 { font-size: 1.8rem; color: #1a1612; }
   .btn-nueva { font-size: 0.85rem; padding: 0.5rem 1rem; }
   .meses-grid { grid-template-columns: 1fr; }

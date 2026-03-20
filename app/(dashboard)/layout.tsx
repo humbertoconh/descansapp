@@ -220,8 +220,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <div className="nav-usuario">Hola, <span>{nombre}</span></div>
           <button className="btn-salir" onClick={cerrarSesion}>SALIR</button>
         </div>
-<div className="nav-centro" style={{ display: 'none' }}>Hola, <span>{nombre}</span></div>
-        <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+<div className="nav-centro">Hola, <span>{nombre}</span></div>
+        <div style={{ position: 'relative', display: 'flex', alignItems: 'center', marginRight: '0.5rem' }}>
   <button id="notif-btn" className="notif-btn" onClick={() => setMostrarNotifs(!mostrarNotifs)} style={{ color: '#1a1612', fontSize: '1.3rem' }}>
     🔔
     {noLeidas > 0 && <span className="notif-badge">{noLeidas}</span>}

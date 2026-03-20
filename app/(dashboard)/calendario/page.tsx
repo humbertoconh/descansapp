@@ -368,7 +368,7 @@ return (
   .badge-pedido, .badge-ofrecido, .badge-espera, .badge-suelto { font-size: 0.7rem !important; padding: 1px 3px !important; }
   .dia-semana { font-size: 0.75rem !important; }
 }
-        @media (max-width: 768px) { .meses-grid { grid-template-columns: 1fr; } .cal-header { flex-direction: column; } }
+        @media (max-width: 500px) { .meses-grid { grid-template-columns: 1fr; } .cal-header { flex-direction: column; } }
       `}</style>
 <div className="cal-page">
         <div className="cal-header">

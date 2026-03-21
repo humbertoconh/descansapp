@@ -189,6 +189,20 @@ function CalendarioContent() {
       p_aceptante_id: miId,
       p_dia_ofrecido_id: diaOfrecidoId,
     })
+    // Enviar email al solicitante para que confirme
+    const { data: emailData } = await supabase.rpc('get_user_email', { p_user_id: solicitud.solicitante_id })
+    const { data: perfil } = await supabase.from('profiles').select('nombre, apellidos, chapa').eq('id', miId).single()
+    const { data: diaOfrecido } = await supabase.from('dias_ofrecidos').select('fecha').eq('id', diaOfrecidoId).single()
+    if (emailData && perfil && diaOfrecido) {
+      await enviarEmail(
+        emailData,
+        '⚡ Alguien acepta tu intercambio - DescansApp',
+        templateNotificacion(
+          '¡Alguien acepta tu intercambio!',
+          `${perfil.nombre} ${perfil.apellidos} (chapa ${perfil.chapa}) acepta darte el ${fmt(diaOfrecido.fecha)} a cambio del ${fmt(solicitud.dia_pedido)}. Entra en DescansApp para confirmar el intercambio.`
+        )
+      )
+    }
     await cargar()
     setModalDia(null)
     setModalAceptar(null)
@@ -226,12 +240,28 @@ const apuntarseListaEspera = async (fecha: string) => {
     await cargar()
     setModalDia(null)
   }
-  const soltarDia = async (fecha: string) => {
+const soltarDia = async (fecha: string) => {
     setSoltando(true)
-    await supabase.rpc('soltar_dia', {
+    const { data } = await supabase.rpc('soltar_dia', {
       p_user_id: miId,
       p_fecha: fecha,
     })
+    // Enviar email al asignado si hay alguien en lista de espera
+    const { data: suelto } = await supabase.from('dias_sueltos').select('asignado_a, fecha').eq('user_id', miId).eq('fecha', fecha).single()
+    if (suelto?.asignado_a) {
+      const { data: emailData } = await supabase.rpc('get_user_email', { p_user_id: suelto.asignado_a })
+      const { data: perfil } = await supabase.from('profiles').select('nombre, apellidos, chapa').eq('id', miId).single()
+      if (emailData && perfil) {
+        await enviarEmail(
+          emailData,
+          '🎉 ¡Te han asignado un día! - DescansApp',
+          templateNotificacion(
+            '¡Te han asignado un día!',
+            `${perfil.nombre} ${perfil.apellidos} (chapa ${perfil.chapa}) te ha soltado el ${fmt(fecha)}. ¡Es tuyo! Recuerda tramitar el cambio en la web cooperativa.`
+          )
+        )
+      }
+    }
     await cargar()
     setModalSoltar(false)
     setDiaSoltar('')

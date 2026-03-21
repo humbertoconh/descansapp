@@ -257,7 +257,7 @@ const soltarDia = async (fecha: string) => {
           '🎉 ¡Te han asignado un día! - DescansApp',
           templateNotificacion(
             '¡Te han asignado un día!',
-            `${perfil.nombre} ${perfil.apellidos} (chapa ${perfil.chapa}) te ha soltado el ${fmt(fecha)}. ¡Es tuyo! Recuerda tramitar el cambio en la web cooperativa.`
+            `${perfil.nombre} ${perfil.apellidos} (chapa ${perfil.chapa}) te ha soltado el ${fmt(fecha)}. ¡Es tuyo! Recuerda tramitar el cambio en la web del Cpe.`
           )
         )
       }
@@ -420,7 +420,7 @@ return (
 <div className="cal-page">
         <div className="cal-header">
           <div>
-            <h1>CALENDARIO 2026</h1>
+            <h1>CALENDARIO</h1>
             <p>Pincha cualquier día para ver o crear solicitudes de intercambio</p>
           </div>
           <div className="header-right">
@@ -455,8 +455,10 @@ return (
           </div>
         </div>
         <div className="meses-grid">
-          {Array.from({ length: 12 }, (_, i) => i).map(mes => {
-            const fecha = new Date(2026, mes, 1)
+          {Array.from({ length: 12 }, (_, i) => i).map(offset => {
+            const ahora = new Date()
+            const fecha = new Date(ahora.getFullYear(), ahora.getMonth() + offset, 1)
+            const mes = fecha.getMonth()
             const diasEnMes = getDaysInMonth(fecha)
             const primerDia = (getDay(startOfMonth(fecha)) + 6) % 7
             const nombreMes = format(fecha, 'MMMM', { locale: es }).toUpperCase()
@@ -474,9 +476,9 @@ return (
                   ))}
                   {Array.from({ length: diasEnMes }, (_, i) => {
                     const dia = i + 1
-                    const fechaStr = `2026-${String(mes+1).padStart(2,'0')}-${String(dia).padStart(2,'0')}`
+                    const fechaStr = `${fecha.getFullYear()}-${String(mes+1).padStart(2,'0')}-${String(dia).padStart(2,'0')}`
                     const esFestivo = FESTIVOS_2026.includes(fechaStr)
-                    const esHoy = isToday(new Date(2026, mes, dia))
+                    const esHoy = isToday(new Date(fecha.getFullYear(), mes, dia))
                     const pedidos = diasPedidos[fechaStr] || []
                     const ofrecidos = diasOfrecidosMap[fechaStr] || []
                     const sueltos = diasSueltos.filter(d => {
@@ -733,8 +735,8 @@ return (
               <input
                 type="date"
                 value={diaSoltar}
-                min="2026-01-01"
-                max="2026-12-31"
+                min={new Date().toISOString().split("T")[0]}
+                max={new Date(new Date().getFullYear() + 1, new Date().getMonth(), new Date().getDate()).toISOString().split("T")[0]}
                 onChange={e => setDiaSoltar(e.target.value)}
               />
               {diaSoltar && FESTIVOS_2026.includes(diaSoltar) && (
@@ -761,7 +763,7 @@ return (
             <h3>NUEVA SOLICITUD</h3>
             <div className="field">
               <label>Día que quiero</label>
-              <input type="date" value={diaPedido} min="2026-01-01" max="2026-12-31"
+              <input type="date" value={diaPedido} min={new Date().toISOString().split("T")[0]} max={new Date(new Date().getFullYear() + 1, new Date().getMonth(), new Date().getDate()).toISOString().split("T")[0]}
                 onChange={e => { setDiaPedido(e.target.value); buscarCoincidencias(e.target.value, diasOfrecidos) }} />
               {diaPedido && FESTIVOS_2026.includes(diaPedido) && (
                 <div className="festivo-aviso">⚠️ Festivo: {NOMBRES_FESTIVOS[diaPedido]}</div>
@@ -771,7 +773,7 @@ return (
               <label>Días que ofrezco a cambio</label>
               {diasOfrecidos.map((d, i) => (
                 <div key={i} className="dia-row">
-                  <input type="date" value={d} min="2026-01-01" max="2026-12-31"
+                  <input type="date" value={d} min={new Date().toISOString().split("T")[0]} max={new Date(new Date().getFullYear() + 1, new Date().getMonth(), new Date().getDate()).toISOString().split("T")[0]}
                     onChange={e => {
                       const nuevo = [...diasOfrecidos]
                       nuevo[i] = e.target.value

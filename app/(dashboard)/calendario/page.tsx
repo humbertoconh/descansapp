@@ -21,7 +21,7 @@ const NOMBRES_FESTIVOS: Record<string,string> = {
   '2026-12-08':'Inmaculada','2026-12-25':'Navidad',
 }
 const fmt = (f: string) => f.split("-").reverse().join("/") 
-const COLORES = ['#f5c518','#60a5fa','#60a5fa','#f87171','#34d399','#f472b6','#e879f9','#2dd4bf']
+const COLORES = ['#f5c518','#60a5fa','#34d399','#f87171','#a78bfa','#fb923c','#e879f9','#2dd4bf']
 
 type DiaOfrecido = { id: string; fecha: string }
 type Solicitud = {
@@ -307,17 +307,18 @@ return (
         .dia.vacio { cursor: default; pointer-events: none; background: transparent; }
         .dia.festivo { background: #2a1a1a; color: #e05050; border-color: #3a2020; }
         .dia.hoy { border-color: #f5c518 !important; }
-        .dia-num { font-size: 0.7rem; line-height: 1; }
+.dia.no-valido { background: #e8e4e0 !important; color: #b8b0a8 !important; cursor: default; pointer-events: none; }
+.dia-num { font-size: 0.7rem; line-height: 1; }
         .puntos { display: flex; gap: 2px; margin-top: 2px; flex-wrap: wrap; justify-content: center; }
 .dia-badges { display: flex; gap: 2px; margin-top: 2px; flex-wrap: wrap; justify-content: center; }
 .badge-pedido { font-size: 0.55rem; background: #c4a520; color: #fff; border-radius: 2px; padding: 0 2px; font-weight: 700; line-height: 1.4; }
-.badge-ofrecido { font-size: 0.55rem; background: #60a5fa; color: #0f0f0f; border-radius: 2px; padding: 0 2px; font-weight: 700; line-height: 1.4; }
-.badge-espera { font-size: 0.55rem; background: #f472b6; color: #fff; border-radius: 2px; padding: 0 2px; font-weight: 700; line-height: 1.4; }
-.badge-suelto { font-size: 0.55rem; background: #34d399; color: #0f0f0f; border-radius: 2px; padding: 0 2px; font-weight: 700; line-height: 1.4; }
+.badge-ofrecido { font-size: 0.55rem; background: #34d399; color: #0f0f0f; border-radius: 2px; padding: 0 2px; font-weight: 700; line-height: 1.4; }
+.badge-espera { font-size: 0.55rem; background: #fb923c; color: #fff; border-radius: 2px; padding: 0 2px; font-weight: 700; line-height: 1.4; }
+.badge-suelto { font-size: 0.55rem; background: #a78bfa; color: #0f0f0f; border-radius: 2px; padding: 0 2px; font-weight: 700; line-height: 1.4; }
         .punto-pedido { width: 5px; height: 5px; border-radius: 2px; background: #f5c518; flex-shrink: 0; }
-        .punto-ofrecido { width: 5px; height: 5px; border-radius: 50%; background: #60a5fa; flex-shrink: 0; }
-.punto-espera { width: 5px; height: 5px; border-radius: 50%; background: #f472b6; flex-shrink: 0; }
-.punto-suelto { width: 5px; height: 5px; border-radius: 50%; background: #34d399; flex-shrink: 0; }
+        .punto-ofrecido { width: 5px; height: 5px; border-radius: 50%; background: #34d399; flex-shrink: 0; }
+.punto-espera { width: 5px; height: 5px; border-radius: 50%; background: #fb923c; flex-shrink: 0; }
+.punto-suelto { width: 5px; height: 5px; border-radius: 50%; background: #a78bfa; flex-shrink: 0; }
         .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); display: flex; align-items: center; justify-content: center; z-index: 100; padding: 1rem; }
         .modal { background: #1a1612; border: 1px solid #2a2420; border-left: 3px solid #f5c518; padding: 1.5rem; width: 100%; max-width: 480px; border-radius: 4px; max-height: 90vh; overflow-y: auto; }
         .modal h3 { font-family: 'Bebas Neue', sans-serif; font-size: 1.3rem; letter-spacing: 2px; color: #f5c518; margin-bottom: 1rem; }
@@ -331,7 +332,7 @@ return (
         .chip:hover { background: #f5c518; color: #0f0f0f; border-color: #f5c518; }
         .tag { font-size: 0.65rem; padding: 0.1rem 0.4rem; border-radius: 2px; font-weight: 500; }
         .tag-yo { background: #2a2010; color: #f5c518; }
-        .tag-espera { background: #1a2a1a; color: #60a5fa; }
+        .tag-espera { background: #1a2a1a; color: #34d399; }
         .modal-btns { display: flex; gap: 0.5rem; margin-top: 1rem; flex-wrap: wrap; }
         .btn-amarillo { background: #f5c518; color: #0f0f0f; border: none; padding: 0.5rem 1rem; font-family: 'Bebas Neue', sans-serif; font-size: 0.9rem; letter-spacing: 1px; cursor: pointer; border-radius: 2px; }
         .btn-amarillo:disabled { opacity: 0.4; cursor: not-allowed; }
@@ -426,7 +427,7 @@ return (
           <div className="header-right">
             <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
               <button className="btn-nueva" onClick={() => setModalNueva(true)}>+ NUEVA SOLICITUD</button>
-              <button className="btn-nueva" style={{ background: '#f472b6' }} onClick={() => setModalSoltar(true)}>+ SOLTAR DÍA</button>
+              <button className="btn-nueva" style={{ background: '#fb923c' }} onClick={() => setModalSoltar(true)}>+ SOLTAR DÍA</button>
               <button className="btn-nueva" style={{ background: '#a78bfa' }} onClick={buscarCadenas}>🔗 BUSCAR CADENAS</button>
             </div>
             <div className="leyenda">
@@ -439,15 +440,15 @@ return (
                 Día pedido
               </div>
               <div className="leyenda-item">
-                <div className="leyenda-dot" style={{ background: '#60a5fa' }} />
+                <div className="leyenda-dot" style={{ background: '#34d399' }} />
                 Día ofrecido
               </div>
               <div className="leyenda-item">
-                <div className="leyenda-dot" style={{ background: '#f472b6' }} />
+                <div className="leyenda-dot" style={{ background: '#fb923c' }} />
                 Lista de espera
               </div>
               <div className="leyenda-item">
-                <div className="leyenda-dot" style={{ background: '#34d399' }} />
+                <div className="leyenda-dot" style={{ background: '#a78bfa' }} />
                 Día disponible
               </div>
              
@@ -479,6 +480,10 @@ return (
                     const fechaStr = `${fecha.getFullYear()}-${String(mes+1).padStart(2,'0')}-${String(dia).padStart(2,'0')}`
                     const esFestivo = FESTIVOS_2026.includes(fechaStr)
                     const esHoy = isToday(new Date(fecha.getFullYear(), mes, dia))
+                    const hoy = new Date(); hoy.setHours(0,0,0,0)
+                    const limit = new Date(Date.now() + 60*24*60*60*1000); limit.setHours(0,0,0,0)
+                    const fechaDia = new Date(fecha.getFullYear(), mes, dia)
+                    const esNoValido = fechaDia < hoy || fechaDia > limit
                     const pedidos = diasPedidos[fechaStr] || []
                     const ofrecidos = diasOfrecidosMap[fechaStr] || []
                     const sueltos = diasSueltos.filter(d => {
@@ -488,7 +493,7 @@ return (
                     return (
                       <div
                         key={dia}
-                        className={`dia${esFestivo ? ' festivo' : ''}${esHoy ? ' hoy' : ''}`}
+                        className={`dia${esFestivo ? ' festivo' : ''}${esHoy ? ' hoy' : ''}${esNoValido ? ' no-valido' : ''}`}
                         onClick={() => abrirDia(fechaStr)}
                         title={esFestivo ? NOMBRES_FESTIVOS[fechaStr] : ''}
                       >
@@ -668,13 +673,13 @@ return (
                         <br /><span style={{ color: '#8a8070', fontSize: '0.78rem' }}>Da el <strong style={{ color: '#e8e0d4' }}>{fmt(c.dia_que_da1)}</strong> y recibe el <strong style={{ color: '#e8e0d4' }}>{fmt(c.dia_que_pide1)}</strong></span>
                       </div>
                       <div style={{ textAlign: 'center', color: '#a78bfa', fontSize: '0.8rem' }}>↕</div>
-                      <div style={{ fontSize: '0.85rem', padding: '0.5rem', background: '#1a1612', borderRadius: '2px', borderLeft: '2px solid #60a5fa' }}>
-                        <strong style={{ color: '#60a5fa' }}>{c.usuario2_nombre}</strong> <span style={{ color: '#6a6058' }}>(chapa {c.usuario2_chapa})</span>
+                      <div style={{ fontSize: '0.85rem', padding: '0.5rem', background: '#1a1612', borderRadius: '2px', borderLeft: '2px solid #34d399' }}>
+                        <strong style={{ color: '#34d399' }}>{c.usuario2_nombre}</strong> <span style={{ color: '#6a6058' }}>(chapa {c.usuario2_chapa})</span>
                         <br /><span style={{ color: '#8a8070', fontSize: '0.78rem' }}>Da el <strong style={{ color: '#e8e0d4' }}>{fmt(c.dia_que_da2)}</strong> y recibe el <strong style={{ color: '#e8e0d4' }}>{fmt(c.dia_que_pide2)}</strong></span>
                       </div>
                       <div style={{ textAlign: 'center', color: '#a78bfa', fontSize: '0.8rem' }}>↕</div>
-                      <div style={{ fontSize: '0.85rem', padding: '0.5rem', background: '#1a1612', borderRadius: '2px', borderLeft: '2px solid #f472b6' }}>
-                        <strong style={{ color: '#f472b6' }}>{c.usuario3_nombre}</strong> <span style={{ color: '#6a6058' }}>(chapa {c.usuario3_chapa})</span>
+                      <div style={{ fontSize: '0.85rem', padding: '0.5rem', background: '#1a1612', borderRadius: '2px', borderLeft: '2px solid #fb923c' }}>
+                        <strong style={{ color: '#fb923c' }}>{c.usuario3_nombre}</strong> <span style={{ color: '#6a6058' }}>(chapa {c.usuario3_chapa})</span>
                         <br /><span style={{ color: '#8a8070', fontSize: '0.78rem' }}>Da el <strong style={{ color: '#e8e0d4' }}>{fmt(c.dia_que_da3)}</strong> y recibe el <strong style={{ color: '#e8e0d4' }}>{fmt(c.dia_que_pide3)}</strong></span>
                       </div>
                     </div>
@@ -735,8 +740,8 @@ return (
               <input
                 type="date"
                 value={diaSoltar}
-                min={new Date().toISOString().split("T")[0]}
-                max={new Date(Date.now() + 60*24*60*60*1000).toISOString().split("T")[0]}
+                min="2026-01-01"
+                max="2026-12-31"
                 onChange={e => setDiaSoltar(e.target.value)}
               />
               {diaSoltar && FESTIVOS_2026.includes(diaSoltar) && (
@@ -746,7 +751,7 @@ return (
             <div className="modal-btns">
               <button
                 className="btn-amarillo"
-                style={{ background: '#f472b6' }}
+                style={{ background: '#fb923c' }}
                 disabled={soltando || !diaSoltar}
                 onClick={() => soltarDia(diaSoltar)}
               >
@@ -763,7 +768,7 @@ return (
             <h3>NUEVA SOLICITUD</h3>
             <div className="field">
               <label>Día que quiero</label>
-              <input type="date" value={diaPedido} min={new Date().toISOString().split("T")[0]} max={new Date(Date.now() + 60*24*60*60*1000).toISOString().split("T")[0]}
+              <input type="date" value={diaPedido} min="2026-01-01" max="2026-12-31"
                 onChange={e => { setDiaPedido(e.target.value); buscarCoincidencias(e.target.value, diasOfrecidos) }} />
               {diaPedido && FESTIVOS_2026.includes(diaPedido) && (
                 <div className="festivo-aviso">⚠️ Festivo: {NOMBRES_FESTIVOS[diaPedido]}</div>
@@ -773,7 +778,7 @@ return (
               <label>Días que ofrezco a cambio</label>
               {diasOfrecidos.map((d, i) => (
                 <div key={i} className="dia-row">
-                  <input type="date" value={d} min={new Date().toISOString().split("T")[0]} max={new Date(Date.now() + 60*24*60*60*1000).toISOString().split("T")[0]}
+                  <input type="date" value={d} min="2026-01-01" max="2026-12-31"
                     onChange={e => {
                       const nuevo = [...diasOfrecidos]
                       nuevo[i] = e.target.value
@@ -790,14 +795,14 @@ return (
               )}
             </div>
             {coincidencias.length > 0 && (
-              <div className="seccion" style={{ background: '#1a2a1a', border: '1px solid #60a5fa', borderRadius: '3px', padding: '0.75rem', marginBottom: '0.75rem' }}>
-                <div className="seccion-titulo" style={{ color: '#60a5fa' }}>⚡ COINCIDENCIA ENCONTRADA</div>
+              <div className="seccion" style={{ background: '#1a2a1a', border: '1px solid #34d399', borderRadius: '3px', padding: '0.75rem', marginBottom: '0.75rem' }}>
+                <div className="seccion-titulo" style={{ color: '#34d399' }}>⚡ COINCIDENCIA ENCONTRADA</div>
                 {coincidencias.map(s => (
                   <div key={s.id} style={{ marginTop: '0.5rem' }}>
                     <div style={{ fontSize: '0.85rem', color: '#e8e0d4', marginBottom: '0.4rem' }}>
                       <strong>{s.profiles?.nombre} {s.profiles?.apellidos}</strong> (chapa {s.profiles?.chapa}) quiere exactamente lo que ofreces y tiene lo que quieres.
                     </div>
-                    <button className="btn-amarillo" style={{ background: '#60a5fa', color: '#0f0f0f', fontSize: '0.8rem' }}
+                    <button className="btn-amarillo" style={{ background: '#34d399', color: '#0f0f0f', fontSize: '0.8rem' }}
                       onClick={async () => {
                         const diaOfrecidoId = s.dias_ofrecidos?.find((d: any) => d.fecha === diaPedido)?.id
 const diaOfrecidoIdFallback = s.dias_ofrecidos?.[0]?.id
@@ -837,8 +842,8 @@ const idFinal = diaOfrecidoId || diaOfrecidoIdFallback
       )}
 <div className="barra-movil">
        <button style={{ background: '#f5c518', color: '#0f0f0f', fontSize: '0.85rem' }} onClick={() => setModalNueva(true)}>+ SOLICITUD</button>
-        <button style={{ background: '#f472b6', color: '#0f0f0f', fontSize: '0.85rem' }} onClick={() => setModalSoltar(true)}>− SOLTAR DÍA</button>
-        <button style={{ background: '#34d399', color: '#0f0f0f', fontSize: '0.85rem' }} onClick={buscarCadenas}>🔗 CADENAS</button>
+        <button style={{ background: '#fb923c', color: '#0f0f0f', fontSize: '0.85rem' }} onClick={() => setModalSoltar(true)}>− SOLTAR DÍA</button>
+        <button style={{ background: '#a78bfa', color: '#0f0f0f', fontSize: '0.85rem' }} onClick={buscarCadenas}>🔗 CADENAS</button>
       </div>
     </>
   )

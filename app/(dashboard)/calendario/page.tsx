@@ -427,7 +427,7 @@ return (
             <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
               <button className="btn-nueva" onClick={() => setModalNueva(true)}>+ NUEVA SOLICITUD</button>
               <button className="btn-nueva" style={{ background: '#f472b6' }} onClick={() => setModalSoltar(true)}>+ SOLTAR DÍA</button>
-              <button className="btn-nueva" style={{ background: '#34d399' }} onClick={buscarCadenas}>🔗 BUSCAR CADENAS</button>
+              <button className="btn-nueva" style={{ background: '#a78bfa' }} onClick={buscarCadenas}>🔗 BUSCAR CADENAS</button>
             </div>
             <div className="leyenda">
               <div className="leyenda-item">
@@ -659,7 +659,7 @@ return (
                 </p>
                 {cadenas.map((c, i) => (
                   <div key={i} className="solicitud-card" style={{ marginBottom: '1rem' }}>
-                    <div style={{ fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '1px', color: '#34d399', marginBottom: '0.75rem', fontWeight: 600 }}>
+                    <div style={{ fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '1px', color: '#a78bfa', marginBottom: '0.75rem', fontWeight: 600 }}>
                       Cadena #{i + 1}
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
@@ -667,12 +667,12 @@ return (
                         <strong style={{ color: '#f5c518' }}>{c.usuario1_nombre}</strong> <span style={{ color: '#6a6058' }}>(chapa {c.usuario1_chapa})</span>
                         <br /><span style={{ color: '#8a8070', fontSize: '0.78rem' }}>Da el <strong style={{ color: '#e8e0d4' }}>{fmt(c.dia_que_da1)}</strong> y recibe el <strong style={{ color: '#e8e0d4' }}>{fmt(c.dia_que_pide1)}</strong></span>
                       </div>
-                      <div style={{ textAlign: 'center', color: '#34d399', fontSize: '0.8rem' }}>↕</div>
+                      <div style={{ textAlign: 'center', color: '#a78bfa', fontSize: '0.8rem' }}>↕</div>
                       <div style={{ fontSize: '0.85rem', padding: '0.5rem', background: '#1a1612', borderRadius: '2px', borderLeft: '2px solid #60a5fa' }}>
                         <strong style={{ color: '#60a5fa' }}>{c.usuario2_nombre}</strong> <span style={{ color: '#6a6058' }}>(chapa {c.usuario2_chapa})</span>
                         <br /><span style={{ color: '#8a8070', fontSize: '0.78rem' }}>Da el <strong style={{ color: '#e8e0d4' }}>{fmt(c.dia_que_da2)}</strong> y recibe el <strong style={{ color: '#e8e0d4' }}>{fmt(c.dia_que_pide2)}</strong></span>
                       </div>
-                      <div style={{ textAlign: 'center', color: '#34d399', fontSize: '0.8rem' }}>↕</div>
+                      <div style={{ textAlign: 'center', color: '#a78bfa', fontSize: '0.8rem' }}>↕</div>
                       <div style={{ fontSize: '0.85rem', padding: '0.5rem', background: '#1a1612', borderRadius: '2px', borderLeft: '2px solid #f472b6' }}>
                         <strong style={{ color: '#f472b6' }}>{c.usuario3_nombre}</strong> <span style={{ color: '#6a6058' }}>(chapa {c.usuario3_chapa})</span>
                         <br /><span style={{ color: '#8a8070', fontSize: '0.78rem' }}>Da el <strong style={{ color: '#e8e0d4' }}>{fmt(c.dia_que_da3)}</strong> y recibe el <strong style={{ color: '#e8e0d4' }}>{fmt(c.dia_que_pide3)}</strong></span>
@@ -680,7 +680,7 @@ return (
                     </div>
                     <div className="modal-btns" style={{ marginTop: '0.75rem' }}>
                     {(esAdmin || c.usuario1_id === miId || c.usuario2_id === miId || c.usuario3_id === miId) && (
-                      <button className="btn-amarillo" style={{ background: '#34d399', fontSize: '0.8rem' }}
+                      <button className="btn-amarillo" style={{ background: '#a78bfa', fontSize: '0.8rem' }}
                         onClick={async () => {
                           const { data: cadenaCreada } = await supabase.from('cadenas_intercambio').insert({
                             solicitud1_id: c.solicitud1_id,

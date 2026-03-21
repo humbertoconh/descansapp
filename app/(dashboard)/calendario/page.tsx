@@ -736,7 +736,7 @@ return (
                 type="date"
                 value={diaSoltar}
                 min={new Date().toISOString().split("T")[0]}
-                max={new Date(new Date().getFullYear() + 1, new Date().getMonth(), new Date().getDate()).toISOString().split("T")[0]}
+                max={new Date(Date.now() + 60*24*60*60*1000).toISOString().split("T")[0]}
                 onChange={e => setDiaSoltar(e.target.value)}
               />
               {diaSoltar && FESTIVOS_2026.includes(diaSoltar) && (
@@ -763,7 +763,7 @@ return (
             <h3>NUEVA SOLICITUD</h3>
             <div className="field">
               <label>Día que quiero</label>
-              <input type="date" value={diaPedido} min={new Date().toISOString().split("T")[0]} max={new Date(new Date().getFullYear() + 1, new Date().getMonth(), new Date().getDate()).toISOString().split("T")[0]}
+              <input type="date" value={diaPedido} min={new Date().toISOString().split("T")[0]} max={new Date(Date.now() + 60*24*60*60*1000).toISOString().split("T")[0]}
                 onChange={e => { setDiaPedido(e.target.value); buscarCoincidencias(e.target.value, diasOfrecidos) }} />
               {diaPedido && FESTIVOS_2026.includes(diaPedido) && (
                 <div className="festivo-aviso">⚠️ Festivo: {NOMBRES_FESTIVOS[diaPedido]}</div>
@@ -773,7 +773,7 @@ return (
               <label>Días que ofrezco a cambio</label>
               {diasOfrecidos.map((d, i) => (
                 <div key={i} className="dia-row">
-                  <input type="date" value={d} min={new Date().toISOString().split("T")[0]} max={new Date(new Date().getFullYear() + 1, new Date().getMonth(), new Date().getDate()).toISOString().split("T")[0]}
+                  <input type="date" value={d} min={new Date().toISOString().split("T")[0]} max={new Date(Date.now() + 60*24*60*60*1000).toISOString().split("T")[0]}
                     onChange={e => {
                       const nuevo = [...diasOfrecidos]
                       nuevo[i] = e.target.value

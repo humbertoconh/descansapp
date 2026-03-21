@@ -100,7 +100,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <div className="notif-titulo">{n.titulo}</div>
             <div className="notif-mensaje">{n.mensaje}</div>
             {n.tipo === 'cadena' && n.referencia_id && (
-              <button style={{ marginTop: '0.4rem', background: '#a78bfa', color: '#0f0f0f', border: 'none', padding: '0.3rem 0.8rem', fontFamily: "'Bebas Neue', sans-serif", fontSize: '0.75rem', letterSpacing: '1px', cursor: 'pointer', borderRadius: '2px' }}
+              <button style={{ marginTop: '0.4rem', background: '#34d399', color: '#0f0f0f', border: 'none', padding: '0.3rem 0.8rem', fontFamily: "'Bebas Neue', sans-serif", fontSize: '0.75rem', letterSpacing: '1px', cursor: 'pointer', borderRadius: '2px' }}
                 onClick={async (e) => {
                   e.stopPropagation()
                   const { data: { user } } = await supabase.auth.getUser()

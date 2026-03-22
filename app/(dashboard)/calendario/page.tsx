@@ -437,7 +437,7 @@ return (
           <div className="header-right">
             <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
               <button className="btn-nueva" onClick={() => setModalNueva(true)}>+ NUEVA SOLICITUD</button>
-              <button className="btn-nueva" style={{ background: '#fb923c' }} onClick={() => setModalSoltar(true)}>+ SOLTAR DÍA</button>
+              <button className="btn-nueva" style={{ background: '#fb923c' }} onClick={() => setModalSoltar(true)}>- SOLTAR DÍA</button>
               <button className="btn-nueva" style={{ background: '#a78bfa' }} onClick={buscarCadenas}>🔗 BUSCAR CADENAS</button>
             </div>
             <div className="leyenda">

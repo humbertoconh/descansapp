@@ -322,9 +322,9 @@ return (
         .puntos { display: flex; gap: 2px; margin-top: 2px; flex-wrap: wrap; justify-content: center; }
 .dia-badges { display: flex; gap: 2px; margin-top: 2px; flex-wrap: wrap; justify-content: center; }
 .badge-pedido { font-size: 0.55rem; background: #c4a520; color: #fff; border-radius: 2px; padding: 0 2px; font-weight: 700; line-height: 1.4; }
-.badge-ofrecido { font-size: 0.55rem; background: #34d399; color: #0f0f0f; border-radius: 2px; padding: 0 2px; font-weight: 700; line-height: 1.4; }
-.badge-espera { font-size: 0.55rem; background: #fb923c; color: #fff; border-radius: 2px; padding: 0 2px; font-weight: 700; line-height: 1.4; }
-.badge-suelto { font-size: 0.55rem; background: #a78bfa; color: #0f0f0f; border-radius: 2px; padding: 0 2px; font-weight: 700; line-height: 1.4; }
+.badge-ofrecido { font-size: 0.55rem; background: #60a5fa; color: #0f0f0f; border-radius: 2px; padding: 0 2px; font-weight: 700; line-height: 1.4; }
+.badge-espera { font-size: 0.55rem; background: #f472b6; color: #fff; border-radius: 2px; padding: 0 2px; font-weight: 700; line-height: 1.4; }
+.badge-suelto { font-size: 0.55rem; background: #34d399; color: #0f0f0f; border-radius: 2px; padding: 0 2px; font-weight: 700; line-height: 1.4; }
         .punto-pedido { width: 5px; height: 5px; border-radius: 2px; background: #f5c518; flex-shrink: 0; }
         .punto-ofrecido { width: 5px; height: 5px; border-radius: 50%; background: #34d399; flex-shrink: 0; }
 .punto-espera { width: 5px; height: 5px; border-radius: 50%; background: #fb923c; flex-shrink: 0; }

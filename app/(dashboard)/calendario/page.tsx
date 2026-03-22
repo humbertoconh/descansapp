@@ -237,12 +237,9 @@ const apuntarseListaEspera = async (fecha: string) => {
         setApuntando(false)
         return
       }
-      setApuntando(false)
-      return
-    }
       const yaSolte = diasSueltos.find(d => {
         const fechaDB = d.fecha?.split('T')[0]
-
+        return fechaDB === fecha && d.user_id === miId
       })
       if (yaSolte) {
         setMensajeError('No puedes apuntarte a la lista de espera de un día que tú mismo has soltado.')
@@ -261,9 +258,10 @@ const apuntarseListaEspera = async (fecha: string) => {
       }
       await cargar()
       setModalDia(null)
+    } finally {
       setApuntando(false)
+    }
   }
-}
 
   const quitarseListaEspera = async (fecha: string) => {
     await supabase.from('lista_espera').delete().eq('user_id', miId).eq('dia_pedido', fecha)

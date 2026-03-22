@@ -56,6 +56,7 @@ function CalendarioContent() {
   const [diaSoltar, setDiaSoltar] = useState('')
   const [soltando, setSoltando] = useState(false)
   const [mensajeError, setMensajeError] = useState('')
+  const [apuntando, setApuntando] = useState(false)
   const [diaParam, setDiaParam] = useState<string | null>(null)
   const [listaEspera, setListaEspera] = useState<any[]>([])
   const cargar = async () => {
@@ -222,8 +223,11 @@ const confirmarIntercambio = async (solicitudId: string) => {
     })
     await cargar()
     setModalDia(null)
+    setApuntando(false)
   }
 const apuntarseListaEspera = async (fecha: string) => {
+    if (apuntando) return
+    setApuntando(true)
     const yaApuntado = listaEspera.find(l => l.dia_pedido === fecha && l.user_id === miId)
     if (yaApuntado) return
     const misColas = listaEspera.filter(l => l.user_id === miId)
@@ -652,7 +656,7 @@ return (
                             </button>
                           </div>
                         )}
-                        <button className="btn-gris" onClick={() => apuntarseListaEspera(modalDia.fecha)}>+ APUNTARME A LA LISTA</button>
+                        <button className="btn-gris" disabled={apuntando} onClick={() => apuntarseListaEspera(modalDia.fecha)}>{apuntando ? 'PROCESANDO...' : '+ APUNTARME A LA LISTA'}</button>
                       </>
                     )}
                   </div>

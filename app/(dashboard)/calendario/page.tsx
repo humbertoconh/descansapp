@@ -440,15 +440,15 @@ return (
                 Día pedido
               </div>
               <div className="leyenda-item">
-                <div className="leyenda-dot" style={{ background: '#34d399' }} />
+                <div className="leyenda-dot" style={{ background: '#60a5fa' }} />
                 Día ofrecido
               </div>
               <div className="leyenda-item">
-                <div className="leyenda-dot" style={{ background: '#fb923c' }} />
+                <div className="leyenda-dot" style={{ background: '#f472b6' }} />
                 Lista de espera
               </div>
               <div className="leyenda-item">
-                <div className="leyenda-dot" style={{ background: '#a78bfa' }} />
+                <div className="leyenda-dot" style={{ background: '#34d399' }} />
                 Día disponible
               </div>
              

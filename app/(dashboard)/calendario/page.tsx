@@ -242,8 +242,7 @@ const apuntarseListaEspera = async (fecha: string) => {
     }
       const yaSolte = diasSueltos.find(d => {
         const fechaDB = d.fecha?.split('T')[0]
-Ya estás en 5 listas de espera
-      alert('Ya estás en 5 listas de espera. Quítate de alguna antes de apuntarte a        return fechaDB === fecha && d.user_id === miId
+
       })
       if (yaSolte) {
         setMensajeError('No puedes apuntarte a la lista de espera de un día que tú mismo has soltado.')

@@ -620,8 +620,10 @@ return (
                     {yoApuntado ? (
                       <button className="btn-rojo" onClick={() => quitarseListaEspera(modalDia.fecha)}>SALIR DE LA LISTA</button>
                     ) : (
-{mensajeError && <div style={{ color: '#e05050', fontSize: '0.82rem', padding: '0.5rem', background: '#2a1a1a', borderRadius: '3px', marginBottom: '0.5rem' }}>{mensajeError}</div>}                      
-<button className="btn-gris" onClick={() => apuntarseListaEspera(modalDia.fecha)}>+ APUNTARME A LA LISTA</button>
+                      <>
+                        {mensajeError && <div style={{ color: '#e05050', fontSize: '0.82rem', padding: '0.5rem', background: '#2a1a1a', borderRadius: '3px', marginBottom: '0.5rem' }}>{mensajeError}</div>}
+                        <button className="btn-gris" onClick={() => apuntarseListaEspera(modalDia.fecha)}>+ APUNTARME A LA LISTA</button>
+                      </>
                     )}
                   </div>
                 </div>

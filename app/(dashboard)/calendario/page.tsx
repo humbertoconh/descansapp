@@ -233,12 +233,17 @@ const apuntarseListaEspera = async (fecha: string) => {
       if (yaApuntado) return
       const misColas = listaEspera.filter(l => l.user_id === miId)
       if (misColas.length >= 5) {
-        alert('Ya estás en 5 listas de espera. Quítate de alguna antes de apuntarte a otra.')
+        setMensajeError('Ya estás en 5 listas de espera. Quítate de alguna antes de apuntarte a otra.')
+        setApuntando(false)
         return
       }
+      setApuntando(false)
+      return
+    }
       const yaSolte = diasSueltos.find(d => {
         const fechaDB = d.fecha?.split('T')[0]
-        return fechaDB === fecha && d.user_id === miId
+Ya estás en 5 listas de espera
+      alert('Ya estás en 5 listas de espera. Quítate de alguna antes de apuntarte a        return fechaDB === fecha && d.user_id === miId
       })
       if (yaSolte) {
         setMensajeError('No puedes apuntarte a la lista de espera de un día que tú mismo has soltado.')
@@ -257,10 +262,9 @@ const apuntarseListaEspera = async (fecha: string) => {
       }
       await cargar()
       setModalDia(null)
-    } finally {
       setApuntando(false)
-    }
   }
+}
 
   const quitarseListaEspera = async (fecha: string) => {
     await supabase.from('lista_espera').delete().eq('user_id', miId).eq('dia_pedido', fecha)

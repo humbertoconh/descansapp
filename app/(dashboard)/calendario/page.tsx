@@ -55,6 +55,7 @@ function CalendarioContent() {
   const [modalSoltar, setModalSoltar] = useState(false)
   const [diaSoltar, setDiaSoltar] = useState('')
   const [soltando, setSoltando] = useState(false)
+  const [mensajeError, setMensajeError] = useState('')
   const [diaParam, setDiaParam] = useState<string | null>(null)
   const [listaEspera, setListaEspera] = useState<any[]>([])
   const cargar = async () => {
@@ -234,8 +235,8 @@ const apuntarseListaEspera = async (fecha: string) => {
       const fechaDB = d.fecha?.split('T')[0]
       return fechaDB === fecha && d.user_id === miId
     })
-    if (yaSolte) {
-      alert('No puedes apuntarte a la lista de espera de un día que tú mismo has soltado.')
+   if (yaSolte) {
+      setMensajeError('No puedes apuntarte a la lista de espera de un día que tú mismo has soltado.')
       return
     }
     const { error } = await supabase.rpc('apuntarse_lista_espera', { p_user_id: miId, p_fecha: fecha })
@@ -619,7 +620,8 @@ return (
                     {yoApuntado ? (
                       <button className="btn-rojo" onClick={() => quitarseListaEspera(modalDia.fecha)}>SALIR DE LA LISTA</button>
                     ) : (
-                      <button className="btn-gris" onClick={() => apuntarseListaEspera(modalDia.fecha)}>+ APUNTARME A LA LISTA</button>
+{mensajeError && <div style={{ color: '#e05050', fontSize: '0.82rem', padding: '0.5rem', background: '#2a1a1a', borderRadius: '3px', marginBottom: '0.5rem' }}>{mensajeError}</div>}                      
+<button className="btn-gris" onClick={() => apuntarseListaEspera(modalDia.fecha)}>+ APUNTARME A LA LISTA</button>
                     )}
                   </div>
                 </div>

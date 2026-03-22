@@ -642,7 +642,7 @@ return (
                         {mensajeError && (
                           <div style={{ color: '#e05050', fontSize: '0.82rem', padding: '0.5rem', background: '#2a1a1a', borderRadius: '3px', marginBottom: '0.5rem' }}>
                             {mensajeError}
-                            <button className="btn-rojo" style={{ marginTop: '0.4rem', fontSize: '0.75rem', padding: '0.3rem 0.6rem' }}
+                            <button className="btn-gris" style={{ marginTop: '0.4rem', fontSize: '0.75rem', padding: '0.3rem 0.6rem', color: '#34d399', borderColor: '#34d399' }}
                               onClick={async () => {
                                 await supabase.from('dias_sueltos').delete().eq('user_id', miId).eq('fecha', modalDia.fecha)
                                 setMensajeError('')

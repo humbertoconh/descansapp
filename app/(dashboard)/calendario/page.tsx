@@ -228,43 +228,38 @@ const confirmarIntercambio = async (solicitudId: string) => {
 const apuntarseListaEspera = async (fecha: string) => {
     if (apuntando) return
     setApuntando(true)
-    const yaApuntado = listaEspera.find(l => l.dia_pedido === fecha && l.user_id === miId)
-    if (yaApuntado) return
-    const misColas = listaEspera.filter(l => l.user_id === miId)
-    if (misColas.length >= 5) {
-      alert('Ya estás en 5 listas de espera. Quítate de alguna antes de apuntarte a otra.')
-      return
-    }
-    const yaSolte = diasSueltos.find(d => {
-      const fechaDB = d.fecha?.split('T')[0]
-      return fechaDB === fecha && d.user_id === miId
-    })
-   if (yaSolte) {
-      setMensajeError('No puedes apuntarte a la lista de espera de un día que tú mismo has soltado.')
-      return
-    }
-    const { error } = await supabase.rpc('apuntarse_lista_espera', { p_user_id: miId, p_fecha: fecha })
-    if (error) { alert(error.message); return }
-// Enviar email si se asignó directamente un día suelto
-    const { data: sueltoAsignado } = await supabase.from('dias_sueltos').select('user_id, fecha').eq('asignado_a', miId).eq('fecha', fecha).single()
-    if (sueltoAsignado) {
-      const { data: emailA } = await supabase.rpc('get_user_email', { p_user_id: miId })
-      const { data: emailC } = await supabase.rpc('get_user_email', { p_user_id: sueltoAsignado.user_id })
-      const { data: perfilC } = await supabase.from('profiles').select('nombre, apellidos, chapa').eq('id', sueltoAsignado.user_id).single()
-      const { data: perfilA } = await supabase.from('profiles').select('nombre, apellidos, chapa').eq('id', miId).single()
-      if (emailA && perfilC) {
-        await enviarEmail(emailA, '🎉 ¡Te han asignado un día! - DescansApp',
-          templateNotificacion('¡Te han asignado un día!',
-            `${perfilC.nombre} ${perfilC.apellidos} (chapa ${perfilC.chapa}) tiene el ${fmt(fecha)} disponible y es tuyo. Recuerda tramitar el cambio en la web cooperativa.`))
+    try {
+      const yaApuntado = listaEspera.find(l => l.dia_pedido === fecha && l.user_id === miId)
+      if (yaApuntado) return
+      const misColas = listaEspera.filter(l => l.user_id === miId)
+      if (misColas.length >= 5) {
+        alert('Ya estás en 5 listas de espera. Quítate de alguna antes de apuntarte a otra.')
+        return
       }
-      if (emailC && perfilA) {
-        await enviarEmail(emailC, '📅 Día asignado automáticamente - DescansApp',
-          templateNotificacion('Día asignado automáticamente',
-            `Tu día ${fmt(fecha)} ha sido asignado a ${perfilA.nombre} ${perfilA.apellidos} (chapa ${perfilA.chapa}). Recuerda tramitar el cambio en la web cooperativa.`))
+      const yaSolte = diasSueltos.find(d => {
+        const fechaDB = d.fecha?.split('T')[0]
+        return fechaDB === fecha && d.user_id === miId
+      })
+      if (yaSolte) {
+        setMensajeError('No puedes apuntarte a la lista de espera de un día que tú mismo has soltado.')
+        return
       }
+      const { error } = await supabase.rpc('apuntarse_lista_espera', { p_user_id: miId, p_fecha: fecha })
+      if (error) { alert(error.message); return }
+      const { data: sueltoAsignado } = await supabase.from('dias_sueltos').select('user_id, fecha').eq('asignado_a', miId).eq('fecha', fecha).single()
+      if (sueltoAsignado) {
+        const { data: emailA } = await supabase.rpc('get_user_email', { p_user_id: miId })
+        const { data: emailC } = await supabase.rpc('get_user_email', { p_user_id: sueltoAsignado.user_id })
+        const { data: perfilC } = await supabase.from('profiles').select('nombre, apellidos, chapa').eq('id', sueltoAsignado.user_id).single()
+        const { data: perfilA } = await supabase.from('profiles').select('nombre, apellidos, chapa').eq('id', miId).single()
+        if (emailA && perfilC) await enviarEmail(emailA, '🎉 ¡Te han asignado un día! - DescansApp', templateNotificacion('¡Te han asignado un día!', `${perfilC.nombre} ${perfilC.apellidos} (chapa ${perfilC.chapa}) tiene el ${fmt(fecha)} disponible y es tuyo. Recuerda tramitar el cambio en la web del Cpe.`))
+        if (emailC && perfilA) await enviarEmail(emailC, '📅 Día asignado - DescansApp', templateNotificacion('Día asignado automáticamente', `Tu día ${fmt(fecha)} ha sido asignado a ${perfilA.nombre} ${perfilA.apellidos} (chapa ${perfilA.chapa}). Recuerda tramitar el cambio en la web del Cpe.`))
+      }
+      await cargar()
+      setModalDia(null)
+    } finally {
+      setApuntando(false)
     }
-    await cargar()
-    setModalDia(null)
   }
 
   const quitarseListaEspera = async (fecha: string) => {

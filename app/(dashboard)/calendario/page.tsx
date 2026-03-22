@@ -241,6 +241,24 @@ const apuntarseListaEspera = async (fecha: string) => {
     }
     const { error } = await supabase.rpc('apuntarse_lista_espera', { p_user_id: miId, p_fecha: fecha })
     if (error) { alert(error.message); return }
+// Enviar email si se asignó directamente un día suelto
+    const { data: sueltoAsignado } = await supabase.from('dias_sueltos').select('user_id, fecha').eq('asignado_a', miId).eq('fecha', fecha).single()
+    if (sueltoAsignado) {
+      const { data: emailA } = await supabase.rpc('get_user_email', { p_user_id: miId })
+      const { data: emailC } = await supabase.rpc('get_user_email', { p_user_id: sueltoAsignado.user_id })
+      const { data: perfilC } = await supabase.from('profiles').select('nombre, apellidos, chapa').eq('id', sueltoAsignado.user_id).single()
+      const { data: perfilA } = await supabase.from('profiles').select('nombre, apellidos, chapa').eq('id', miId).single()
+      if (emailA && perfilC) {
+        await enviarEmail(emailA, '🎉 ¡Te han asignado un día! - DescansApp',
+          templateNotificacion('¡Te han asignado un día!',
+            `${perfilC.nombre} ${perfilC.apellidos} (chapa ${perfilC.chapa}) tiene el ${fmt(fecha)} disponible y es tuyo. Recuerda tramitar el cambio en la web cooperativa.`))
+      }
+      if (emailC && perfilA) {
+        await enviarEmail(emailC, '📅 Día asignado automáticamente - DescansApp',
+          templateNotificacion('Día asignado automáticamente',
+            `Tu día ${fmt(fecha)} ha sido asignado a ${perfilA.nombre} ${perfilA.apellidos} (chapa ${perfilA.chapa}). Recuerda tramitar el cambio en la web cooperativa.`))
+      }
+    }
     await cargar()
     setModalDia(null)
   }
@@ -621,7 +639,19 @@ return (
                       <button className="btn-rojo" onClick={() => quitarseListaEspera(modalDia.fecha)}>SALIR DE LA LISTA</button>
                     ) : (
                       <>
-                        {mensajeError && <div style={{ color: '#e05050', fontSize: '0.82rem', padding: '0.5rem', background: '#2a1a1a', borderRadius: '3px', marginBottom: '0.5rem' }}>{mensajeError}</div>}
+                        {mensajeError && (
+                          <div style={{ color: '#e05050', fontSize: '0.82rem', padding: '0.5rem', background: '#2a1a1a', borderRadius: '3px', marginBottom: '0.5rem' }}>
+                            {mensajeError}
+                            <button className="btn-rojo" style={{ marginTop: '0.4rem', fontSize: '0.75rem', padding: '0.3rem 0.6rem' }}
+                              onClick={async () => {
+                                await supabase.from('dias_sueltos').delete().eq('user_id', miId).eq('fecha', modalDia.fecha)
+                                setMensajeError('')
+                                await cargar()
+                              }}>
+                              RECUPERAR ESTE DÍA
+                            </button>
+                          </div>
+                        )}
                         <button className="btn-gris" onClick={() => apuntarseListaEspera(modalDia.fecha)}>+ APUNTARME A LA LISTA</button>
                       </>
                     )}

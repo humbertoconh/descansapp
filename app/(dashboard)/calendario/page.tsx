@@ -233,8 +233,7 @@ const apuntarseListaEspera = async (fecha: string) => {
       if (yaApuntado) return
       const misColas = listaEspera.filter(l => l.user_id === miId)
       if (misColas.length >= 5) {
-        setMensajeError('Ya estás en 5 listas de espera. Quítate de alguna antes de apuntarte a otra.')
-        setApuntando(false)
+        alert('Ya estás en 5 listas de espera. Quítate de alguna antes de apuntarte a otra.')
         return
       }
       const yaSolte = diasSueltos.find(d => {
@@ -642,14 +641,6 @@ return (
                         {mensajeError && (
                           <div style={{ color: '#c04040', fontSize: '0.82rem', padding: '0.5rem', background: '#fde8e8', borderRadius: '3px', marginBottom: '0.5rem' }}>
                             {mensajeError}
-                            
-                              onClick={async () => {
-                                await supabase.from('dias_sueltos').delete().eq('user_id', miId).eq('fecha', modalDia.fecha)
-                                setMensajeError('')
-                                await cargar()
-                              }}>
-                              RECUPERAR ESTE DÍA
-                            </button>
                           </div>
                         )}
                         <button className="btn-gris" disabled={apuntando} onClick={() => apuntarseListaEspera(modalDia.fecha)}>{apuntando ? 'PROCESANDO...' : '+ APUNTARME A LA LISTA'}</button>

@@ -140,8 +140,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         .nav-link:hover { color: #e8e0d4; }
         .nav-link.active { color: #f5c518; border-bottom-color: #f5c518; }
         .nav-right { display: flex; align-items: center; gap: 1rem; }
-        .nav-usuario { font-size: 0.8rem; color: #6a6058; }
-        .nav-usuario span { color: #e8e0d4; font-weight: 500; }
+        .nav-usuario { font-size: 0.8rem; color: #4a4038; }
+        .nav-usuario span { color: #1a1612; font-weight: 500; }
         .btn-salir { background: transparent; border: 1px solid #e0d8d0; color: #4a4038; padding: 0.3rem 0.8rem; font-family: 'Bebas Neue', sans-serif; font-size: 0.8rem; letter-spacing: 1px; cursor: pointer; border-radius: 2px; transition: color 0.15s, border-color 0.15s; }
         .btn-salir:hover { color: #e05050; border-color: #5a2020; }
         .notif-btn { position: relative; background: none; border: none; cursor: pointer; color: #6a6058; font-size: 1.2rem; padding: 0.25rem; transition: color 0.15s; }

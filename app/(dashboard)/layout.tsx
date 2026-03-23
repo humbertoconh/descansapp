@@ -132,30 +132,30 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500&display=swap');
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-        body { background: #0f0f0f; color: #e8e0d4; font-family: 'DM Sans', sans-serif; }
-        .nav { background: #141210; border-bottom: 1px solid #2a2420; padding: 0 2rem; display: flex; align-items: center; justify-content: space-between; height: 56px; position: sticky; top: 0; z-index: 50; }
+        body { background: #f5f0eb; color: #1a1612; font-family: 'DM Sans', sans-serif; }
+        .nav { background: #f5f0eb; border-bottom: 1px solid #e0d8d0; padding: 0 2rem; display: flex; align-items: center; justify-content: space-between; height: 56px; position: sticky; top: 0; z-index: 50; }
         .nav-logo { font-family: 'Bebas Neue', sans-serif; font-size: 1.4rem; letter-spacing: 3px; color: #f5c518; text-decoration: none; }
         .nav-links { display: flex; gap: 0; }
-        .nav-link { font-family: 'Bebas Neue', sans-serif; font-size: 0.9rem; letter-spacing: 2px; color: #6a6058; text-decoration: none; padding: 0 1rem; height: 56px; display: flex; align-items: center; border-bottom: 2px solid transparent; transition: color 0.15s; }
+        .nav-link { font-family: 'Bebas Neue', sans-serif; font-size: 0.9rem; letter-spacing: 2px; color: #4a4038; text-decoration: none; padding: 0 1rem; height: 56px; display: flex; align-items: center; border-bottom: 2px solid transparent; transition: color 0.15s; }
         .nav-link:hover { color: #e8e0d4; }
         .nav-link.active { color: #f5c518; border-bottom-color: #f5c518; }
         .nav-right { display: flex; align-items: center; gap: 1rem; }
         .nav-usuario { font-size: 0.8rem; color: #6a6058; }
         .nav-usuario span { color: #e8e0d4; font-weight: 500; }
-        .btn-salir { background: transparent; border: 1px solid #2a2420; color: #6a6058; padding: 0.3rem 0.8rem; font-family: 'Bebas Neue', sans-serif; font-size: 0.8rem; letter-spacing: 1px; cursor: pointer; border-radius: 2px; transition: color 0.15s, border-color 0.15s; }
+        .btn-salir { background: transparent; border: 1px solid #e0d8d0; color: #4a4038; padding: 0.3rem 0.8rem; font-family: 'Bebas Neue', sans-serif; font-size: 0.8rem; letter-spacing: 1px; cursor: pointer; border-radius: 2px; transition: color 0.15s, border-color 0.15s; }
         .btn-salir:hover { color: #e05050; border-color: #5a2020; }
         .notif-btn { position: relative; background: none; border: none; cursor: pointer; color: #6a6058; font-size: 1.2rem; padding: 0.25rem; transition: color 0.15s; }
         .notif-btn:hover { color: #e8e0d4; }
         .notif-badge { position: absolute; top: -2px; right: -4px; background: #e05050; color: #fff; font-size: 0.6rem; width: 16px; height: 16px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: 'Bebas Neue', sans-serif; }
-        .notif-panel { position: absolute; top: 56px; right: 1rem; width: 320px; background: #1a1612; border: 1px solid #2a2420; border-radius: 4px; z-index: 100; max-height: 400px; overflow-y: auto; box-shadow: 0 8px 32px rgba(0,0,0,0.5); }
-        .notif-header { padding: 0.75rem 1rem; border-bottom: 1px solid #2a2420; font-family: 'Bebas Neue', sans-serif; font-size: 0.9rem; letter-spacing: 2px; color: #f5c518; }
-        .notif-item { padding: 0.75rem 1rem; border-bottom: 1px solid #1e1a16; cursor: pointer; transition: background 0.1s; }
-        .notif-item:hover { background: #221e18; }
-        .notif-item.no-leida { border-left: 2px solid #f5c518; }
-        .notif-titulo { font-size: 0.85rem; font-weight: 500; color: #e8e0d4; margin-bottom: 0.2rem; }
-        .notif-mensaje { font-size: 0.78rem; color: #8a8070; line-height: 1.4; }
-        .notif-fecha { font-size: 0.7rem; color: #4a4038; margin-top: 0.2rem; }
-        .notif-vacia { padding: 2rem; text-align: center; color: #4a4038; font-size: 0.85rem; }
+        .notif-panel { position: absolute; top: 56px; right: 1rem; width: 320px; background: #fff; border: 1px solid #e0d8d0; border-radius: 4px; z-index: 100; max-height: 400px; overflow-y: auto; box-shadow: 0 8px 32px rgba(0,0,0,0.5); }
+        .notif-header { padding: 0.75rem 1rem; border-bottom: 1px solid #e0d8d0; font-family: 'Bebas Neue', sans-serif; font-size: 0.9rem; letter-spacing: 2px; color: #c4a520; }
+        .notif-item { padding: 0.75rem 1rem; border-bottom: 1px solid #e0d8d0; cursor: pointer; transition: background 0.1s; }
+        .notif-item:hover { background: #f5f0eb; }
+        .notif-item.no-leida { border-left: 2px solid #c4a520; }
+        .notif-titulo { font-size: 0.85rem; font-weight: 500; color: #1a1612; margin-bottom: 0.2rem; }
+        .notif-mensaje { font-size: 0.78rem; color: #4a4038; line-height: 1.4; }
+        .notif-fecha { font-size: 0.7rem; color: #8a8070; margin-top: 0.2rem; }
+        .notif-vacia { padding: 2rem; text-align: center; color: #8a8070; font-size: 0.85rem; }
         .hamburger { display: none; background: none; border: none; color: #e8e0d4; cursor: pointer; font-size: 1.5rem; padding: 0.25rem; }
         .menu-movil { display: none; }
         @media (max-width: 900px) {

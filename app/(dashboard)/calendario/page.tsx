@@ -233,7 +233,8 @@ const apuntarseListaEspera = async (fecha: string) => {
       if (yaApuntado) return
       const misColas = listaEspera.filter(l => l.user_id === miId)
       if (misColas.length >= 5) {
-        alert('Ya estás en 5 listas de espera. Quítate de alguna antes de apuntarte a otra.')
+        setMensajeError('Ya estás en 5 listas de espera. Quítate de alguna antes de apuntarte a otra.')
+        setApuntando(false)
         return
       }
       const yaSolte = diasSueltos.find(d => {
@@ -311,11 +312,11 @@ return (
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500&display=swap');
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-        body { background: #0f0f0f; color: #e8e0d4; font-family: 'DM Sans', sans-serif; }
+        body { background: #f5f0eb; color: #1a1612; font-family: 'DM Sans', sans-serif; }
         .cal-page { padding: 2rem; max-width: 1400px; margin: 0 auto; }
         .cal-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px solid #2a2420; gap: 1rem; flex-wrap: wrap; }
-        .cal-header h1 { font-family: 'Bebas Neue', sans-serif; font-size: 2.5rem; letter-spacing: 3px; color: #f5c518; }
-        .cal-header p { color: #6a6058; font-size: 0.8rem; margin-top: 0.2rem; }
+        .cal-header h1 { font-family: 'Bebas Neue', sans-serif; font-size: 2.5rem; letter-spacing: 3px; color: #c4a520; }
+        .cal-header p { color: #8a8070; font-size: 0.8rem; margin-top: 0.2rem; }
         .header-right { display: flex; flex-direction: column; align-items: flex-end; gap: 0.75rem; }
         .leyenda { display: flex; gap: 1rem; flex-wrap: wrap; align-items: center; justify-content: flex-end; }
         .leyenda-item { display: flex; align-items: center; gap: 0.4rem; font-size: 0.75rem; color: #8a8070; }
@@ -324,15 +325,15 @@ return (
         .btn-nueva { background: #f5c518; color: #0f0f0f; border: none; padding: 0.6rem 1.5rem; font-family: 'Bebas Neue', sans-serif; font-size: 1rem; letter-spacing: 2px; cursor: pointer; border-radius: 2px; }
         .btn-nueva:hover { background: #ffd740; }
         .meses-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.5rem; }
-        .mes { background: #1a1612; border: 1px solid #2a2420; border-radius: 4px; padding: 1rem; }
-        .mes-titulo { font-family: 'Bebas Neue', sans-serif; font-size: 1.1rem; letter-spacing: 2px; color: #f5c518; margin-bottom: 0.75rem; text-align: center; }
+        .mes { background: #fff; border: 1px solid #e0d8d0; border-radius: 4px; padding: 1rem; }
+        .mes-titulo { font-family: 'Bebas Neue', sans-serif; font-size: 1.1rem; letter-spacing: 2px; color: #c4a520; margin-bottom: 0.75rem; text-align: center; }
         .dias-semana { display: grid; grid-template-columns: repeat(7, 1fr); margin-bottom: 0.25rem; }
-        .dia-semana { text-align: center; font-size: 0.6rem; text-transform: uppercase; letter-spacing: 1px; color: #4a4038; padding: 0.2rem 0; }
+        .dia-semana { text-align: center; font-size: 0.6rem; text-transform: uppercase; letter-spacing: 1px; color: #8a8070; padding: 0.2rem 0; }
         .dias-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
-        .dia { aspect-ratio: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 0.7rem; border-radius: 3px; cursor: pointer; position: relative; transition: transform 0.1s; border: 1px solid transparent; background: #141210; color: #6a6058; }
+        .dia { aspect-ratio: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 0.7rem; border-radius: 3px; cursor: pointer; position: relative; transition: transform 0.1s; border: 1px solid transparent; background: #f0ebe5; color: #4a4038; }
         .dia:hover { transform: scale(1.15); z-index: 10; }
         .dia.vacio { cursor: default; pointer-events: none; background: transparent; }
-        .dia.festivo { background: #2a1a1a; color: #e05050; border-color: #3a2020; }
+        .dia.festivo { background: #fde8e8; color: #c04040; border-color: #f0c0c0; }
         .dia.hoy { border-color: #f5c518 !important; }
 .dia.no-valido { background: #e8e4e0 !important; color: #b8b0a8 !important; cursor: default; pointer-events: none; }
 .dia-num { font-size: 0.7rem; line-height: 1; }
@@ -347,15 +348,15 @@ return (
 .punto-espera { width: 5px; height: 5px; border-radius: 50%; background: #fb923c; flex-shrink: 0; }
 .punto-suelto { width: 5px; height: 5px; border-radius: 50%; background: #a78bfa; flex-shrink: 0; }
         .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); display: flex; align-items: center; justify-content: center; z-index: 100; padding: 1rem; }
-        .modal { background: #1a1612; border: 1px solid #2a2420; border-left: 3px solid #f5c518; padding: 1.5rem; width: 100%; max-width: 480px; border-radius: 4px; max-height: 90vh; overflow-y: auto; }
-        .modal h3 { font-family: 'Bebas Neue', sans-serif; font-size: 1.3rem; letter-spacing: 2px; color: #f5c518; margin-bottom: 1rem; }
+        .modal { background: #fff; border: 1px solid #e0d8d0; border-left: 3px solid #c4a520;padding: 1.5rem; width: 100%; max-width: 480px; border-radius: 4px; max-height: 90vh; overflow-y: auto; }
+        .modal h3 { font-family: 'Bebas Neue', sans-serif; font-size: 1.3rem; letter-spacing: 2px; color: #c4a520; margin-bottom: 1rem; }
         .seccion { margin-top: 1rem; }
-        .seccion-titulo { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 1.5px; color: #6a6058; margin-bottom: 0.5rem; border-bottom: 1px solid #2a2420; padding-bottom: 0.3rem; }
-        .solicitud-card { background: #221e18; border: 1px solid #2a2420; border-radius: 3px; padding: 0.75rem; margin-bottom: 0.5rem; }
+        .seccion-titulo { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 1.5px; color: #8a8070; margin-bottom: 0.5rem; border-bottom: 1px solid #e0d8d0; padding-bottom: 0.3rem; }
+        .solicitud-card { background: #f5f0eb; border: 1px solid #e0d8d0; border-radius: 3px; padding: 0.75rem; margin-bottom: 0.5rem; }
         .sol-usuario { display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; font-weight: 500; margin-bottom: 0.5rem; flex-wrap: wrap; }
         .sol-ofrece { font-size: 0.75rem; color: #8a8070; margin-bottom: 0.5rem; }
         .dias-chips { display: flex; gap: 0.4rem; flex-wrap: wrap; margin-top: 0.3rem; }
-        .chip { background: #2a2420; border: 1px solid #3a3028; padding: 0.2rem 0.6rem; font-size: 0.78rem; border-radius: 2px; cursor: pointer; transition: background 0.1s; }
+        .chip { background: #e8e0d8; border: 1px solid #d0c8c0; padding: 0.2rem 0.6rem; font-size: 0.78rem; border-radius: 2px; cursor: pointer; transition: background 0.1s; }
         .chip:hover { background: #f5c518; color: #0f0f0f; border-color: #f5c518; }
         .tag { font-size: 0.65rem; padding: 0.1rem 0.4rem; border-radius: 2px; font-weight: 500; }
         .tag-yo { background: #2a2010; color: #f5c518; }
@@ -367,14 +368,14 @@ return (
         .btn-rojo { background: transparent; color: #e05050; border: 1px solid #5a2020; padding: 0.5rem 1rem; font-family: 'Bebas Neue', sans-serif; font-size: 0.9rem; letter-spacing: 1px; cursor: pointer; border-radius: 2px; }
         .field { display: flex; flex-direction: column; gap: 0.35rem; margin-bottom: 0.75rem; }
         .field label { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 1.5px; color: #8a8070; }
-        .field input[type=date] { background: #221e18; border: 1px solid #2e2820; color: #e8e0d4; padding: 0.6rem 0.8rem; font-family: 'DM Sans', sans-serif; font-size: 0.9rem; outline: none; border-radius: 2px; width: 100%; }
+        .field input[type=date] { background: #f0ebe5; border: 1px solid #d0c8c0; color: #1a1612; padding: 0.6rem 0.8rem; font-family: 'DM Sans', sans-serif; font-size: 0.9rem; outline: none; border-radius: 2px; width: 100%; }
         .field input[type=date]:focus { border-color: #f5c518; }
-        .btn-add { background: none; border: 1px dashed #3a3028; color: #6a6058; padding: 0.4rem 0.8rem; font-size: 0.8rem; cursor: pointer; border-radius: 2px; width: 100%; margin-top: 0.25rem; }
+        .btn-add { background: none; border: 1px dashed #d0c8c0; color: #8a8070; padding: 0.4rem 0.8rem; font-size: 0.8rem; cursor: pointer; border-radius: 2px; width: 100%; margin-top: 0.25rem; }
         .btn-add:hover { border-color: #f5c518; color: #f5c518; }
         .btn-remove { background: none; border: none; color: #e05050; cursor: pointer; font-size: 0.9rem; padding: 0 0.3rem; }
         .dia-row { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.4rem; }
         .festivo-aviso { font-size: 0.72rem; color: #e05050; margin-top: 0.2rem; }
-        .vacio-msg { color: #6a6058; font-size: 0.85rem; margin-top: 0.75rem; }
+        .vacio-msg { color: #8a8070; font-size: 0.85rem; margin-top: 0.75rem; }
 .barra-movil { display: none; position: fixed; bottom: 0; left: 0; right: 0; background: #1a1612; border-top: 1px solid #2a2420; padding: 0.5rem 1rem; gap: 0.5rem; z-index: 50; flex-wrap: wrap; justify-content: center; }
 .barra-movil button { flex: 1; min-width: 80px; padding: 0.5rem 0.5rem; font-family: 'Bebas Neue', sans-serif; font-size: 0.75rem; letter-spacing: 1px; border: none; border-radius: 2px; cursor: pointer; }
         @media (max-width: 1100px) { .meses-grid { grid-template-columns: repeat(3, 1fr); } }
@@ -641,6 +642,14 @@ return (
                         {mensajeError && (
                           <div style={{ color: '#c04040', fontSize: '0.82rem', padding: '0.5rem', background: '#fde8e8', borderRadius: '3px', marginBottom: '0.5rem' }}>
                             {mensajeError}
+                            
+                              onClick={async () => {
+                                await supabase.from('dias_sueltos').delete().eq('user_id', miId).eq('fecha', modalDia.fecha)
+                                setMensajeError('')
+                                await cargar()
+                              }}>
+                              RECUPERAR ESTE DÍA
+                            </button>
                           </div>
                         )}
                         <button className="btn-gris" disabled={apuntando} onClick={() => apuntarseListaEspera(modalDia.fecha)}>{apuntando ? 'PROCESANDO...' : '+ APUNTARME A LA LISTA'}</button>

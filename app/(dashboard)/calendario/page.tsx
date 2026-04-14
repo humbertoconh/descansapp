@@ -245,9 +245,25 @@ const apuntarseListaEspera = async (fecha: string) => {
         setMensajeError('No puedes apuntarte a la lista de espera de un día que tú mismo has soltado.')
         return
       }
-      const { error } = await supabase.rpc('apuntarse_lista_espera', { p_user_id: miId, p_fecha: fecha })
-      if (error) { alert(error.message); return }
-      const { data: sueltoAsignado } = await supabase.from('dias_sueltos').select('user_id, fecha').eq('asignado_a', miId).eq('fecha', fecha).single()
+      // Buscamos al dueño del día suelto ANTES de llamar al RPC
+const { data: sueltoExistente } = await supabase
+  .from('dias_sueltos')
+  .select('user_id, fecha')
+  .eq('fecha', fecha)
+  .eq('estado', 'disponible')
+  .single()
+
+const { error } = await supabase.rpc('apuntarse_lista_espera', { p_user_id: miId, p_fecha: fecha })
+if (error) { alert(error.message); return }
+
+if (sueltoExistente) {
+  const { data: emailA } = await supabase.rpc('get_user_email', { p_user_id: miId })
+  const { data: emailC } = await supabase.rpc('get_user_email', { p_user_id: sueltoExistente.user_id })
+  const { data: perfilC } = await supabase.from('profiles').select('nombre, apellidos, chapa').eq('id', sueltoExistente.user_id).single()
+  const { data: perfilA } = await supabase.from('profiles').select('nombre, apellidos, chapa').eq('id', miId).single()
+  if (emailA && perfilC) await enviarEmail(emailA, '🎉 ¡Te han asignado un día! - DescansApp', templateNotificacion('¡Te han asignado un día!', `${perfilC.nombre} ${perfilC.apellidos} (chapa ${perfilC.chapa}) tiene el ${fmt(fecha)} disponible y es tuyo. Recuerda tramitar el cambio en la web del Cpe.`))
+  if (emailC && perfilA) await enviarEmail(emailC, '📅 Día asignado - DescansApp', templateNotificacion('Día asignado automáticamente', `Tu día ${fmt(fecha)} ha sido asignado a ${perfilA.nombre} ${perfilA.apellidos} (chapa ${perfilA.chapa}). Recuerda tramitar el cambio en la web del Cpe.`))
+}
       if (sueltoAsignado) {
         const { data: emailA } = await supabase.rpc('get_user_email', { p_user_id: miId })
         const { data: emailC } = await supabase.rpc('get_user_email', { p_user_id: sueltoAsignado.user_id })

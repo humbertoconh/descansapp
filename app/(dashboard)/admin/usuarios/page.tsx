@@ -7,7 +7,15 @@ import type { Profile } from '@/lib/types'
 const GRUPO_COLOR: Record<string, string> = {
   'Capataces': '#3b82f6',
   'Clasificadores': '#10b981',
-  'Manipuladores': '#f59e0b',
+  'G-A': '#f59e0b',
+  'G-B': '#f59e0b',
+  'G-C': '#f59e0b',
+  'G-D': '#f59e0b',
+  'G-DA': '#f59e0b',
+  'G-DB': '#f59e0b',
+  'G-E': '#f59e0b',
+  'G-I': '#f59e0b',
+  'SIN-F': '#f59e0b',
 }
 
 export default function AdminUsuariosPage() {
@@ -17,6 +25,7 @@ export default function AdminUsuariosPage() {
   const [loading, setLoading] = useState(true)
   const [accionando, setAccionando] = useState<string | null>(null)
   const [tab, setTab] = useState<'pendientes' | 'aprobados'>('pendientes')
+  const [confirmarEliminar, setConfirmarEliminar] = useState<Profile | null>(null)
 
   const fetchUsuarios = async () => {
     const { data } = await supabase.from('profiles').select('*').order('created_at', { ascending: false })
@@ -46,6 +55,25 @@ export default function AdminUsuariosPage() {
   const hacerAdmin = async (id: string, esAdmin: boolean) => {
     setAccionando(id)
     await supabase.from('profiles').update({ is_admin: !esAdmin }).eq('id', id)
+    await fetchUsuarios()
+    setAccionando(null)
+  }
+
+  const eliminarUsuario = async (usuario: Profile) => {
+    setAccionando(usuario.id)
+    const { data: sols } = await supabase.from('solicitudes').select('id').eq('solicitante_id', usuario.id)
+    if (sols && sols.length > 0) {
+      const ids = sols.map(s => s.id)
+      await supabase.from('aceptaciones').delete().in('solicitud_id', ids)
+      await supabase.from('dias_ofrecidos').delete().in('solicitud_id', ids)
+      await supabase.from('solicitudes').delete().in('id', ids)
+    }
+    await supabase.from('lista_espera').delete().eq('user_id', usuario.id)
+    await supabase.from('dias_sueltos').delete().eq('user_id', usuario.id)
+    await supabase.from('notificaciones').delete().eq('user_id', usuario.id)
+    await supabase.from('profiles').delete().eq('id', usuario.id)
+    await supabase.rpc('eliminar_usuario_auth', { p_user_id: usuario.id }).catch(() => {})
+    setConfirmarEliminar(null)
     await fetchUsuarios()
     setAccionando(null)
   }
@@ -83,11 +111,19 @@ export default function AdminUsuariosPage() {
         .btn-aprobar { background: #f5c518; color: #0f0f0f; border: none; padding: 0.4rem 1rem; font-family: 'Bebas Neue', sans-serif; font-size: 0.85rem; letter-spacing: 1px; cursor: pointer; border-radius: 2px; }
         .btn-aprobar:hover:not(:disabled) { background: #ffd740; }
         .btn-desactivar { background: transparent; color: #e05050; border: 1px solid #5a2020; padding: 0.4rem 0.9rem; font-family: 'Bebas Neue', sans-serif; font-size: 0.85rem; letter-spacing: 1px; cursor: pointer; border-radius: 2px; }
+        .btn-eliminar { background: #e05050; color: #fff; border: none; padding: 0.4rem 0.9rem; font-family: 'Bebas Neue', sans-serif; font-size: 0.85rem; letter-spacing: 1px; cursor: pointer; border-radius: 2px; }
+        .btn-eliminar:hover:not(:disabled) { background: #c03030; }
         .btn-admin { background: transparent; color: #6a6058; border: 1px solid #2a2420; padding: 0.4rem 0.9rem; font-family: 'Bebas Neue', sans-serif; font-size: 0.75rem; letter-spacing: 1px; cursor: pointer; border-radius: 2px; }
         button:disabled { opacity: 0.4; cursor: not-allowed; }
         .empty { text-align: center; padding: 4rem 2rem; color: #4a4038; }
         .empty .icono { font-size: 3rem; margin-bottom: 1rem; display: block; }
         .cargando { text-align: center; padding: 4rem; color: #6a6058; font-family: 'Bebas Neue', sans-serif; font-size: 1.2rem; letter-spacing: 2px; }
+        .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); display: flex; align-items: center; justify-content: center; z-index: 100; padding: 1rem; }
+        .modal-confirmar { background: #1a1612; border: 1px solid #2a2420; border-left: 3px solid #e05050; padding: 2rem; width: 100%; max-width: 400px; border-radius: 4px; }
+        .modal-confirmar h3 { font-family: 'Bebas Neue', sans-serif; font-size: 1.4rem; letter-spacing: 2px; color: #e05050; margin-bottom: 0.75rem; }
+        .modal-confirmar p { font-size: 0.85rem; color: #c8c0b4; line-height: 1.6; margin-bottom: 1.5rem; }
+        .modal-confirmar strong { color: #f5c518; }
+        .modal-btns { display: flex; gap: 0.75rem; }
       `}</style>
       <div className="admin-page">
         <div className="admin-header">
@@ -157,6 +193,9 @@ export default function AdminUsuariosPage() {
                         <button className="btn-admin" disabled={accionando === u.id} onClick={() => hacerAdmin(u.id, u.is_admin)}>
                           {u.is_admin ? 'QUITAR ADMIN' : 'HACER ADMIN'}
                         </button>
+                        <button className="btn-eliminar" disabled={accionando === u.id} onClick={() => setConfirmarEliminar(u)}>
+                          ELIMINAR
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -166,6 +205,24 @@ export default function AdminUsuariosPage() {
           </table>
         )}
       </div>
+
+      {confirmarEliminar && (
+        <div className="overlay" onClick={() => setConfirmarEliminar(null)}>
+          <div className="modal-confirmar" onClick={e => e.stopPropagation()}>
+            <h3>⚠️ ELIMINAR USUARIO</h3>
+            <p>
+              Vas a eliminar a <strong>{confirmarEliminar.nombre} {confirmarEliminar.apellidos}</strong> (chapa <strong>{confirmarEliminar.chapa}</strong>).<br /><br />
+              Se borrarán todas sus solicitudes, días ofrecidos, lista de espera y notificaciones. Esta acción no se puede deshacer.
+            </p>
+            <div className="modal-btns">
+              <button className="btn-eliminar" disabled={accionando === confirmarEliminar.id} onClick={() => eliminarUsuario(confirmarEliminar)}>
+                {accionando === confirmarEliminar.id ? 'ELIMINANDO...' : 'SÍ, ELIMINAR'}
+              </button>
+              <button className="btn-admin" onClick={() => setConfirmarEliminar(null)}>CANCELAR</button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   )
 }

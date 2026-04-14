@@ -48,10 +48,11 @@ export default function RegistroPage() {
       setLoading(false); return
     }
     const { error: profileError } = await supabase.from('profiles').insert({
-      id: authData.user.id, chapa: form.chapa,
-      nombre: form.nombre.trim(), apellidos: form.apellidos.trim(),
-      telefono: form.telefono.trim(), aprobado: false,
-    })
+  id: authData.user.id, chapa: form.chapa,
+  nombre: form.nombre.trim(), apellidos: form.apellidos.trim(),
+  telefono: form.telefono.trim(), aprobado: false, grupo: getGrupoFromChapa(form.chapa),
+  grupo: getGrupoFromChapa(form.chapa),
+})
     if (profileError) {
       if (profileError.code === '23505') setError('Esa chapa ya está registrada.')
       else setError(profileError.message)

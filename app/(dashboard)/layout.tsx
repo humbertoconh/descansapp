@@ -46,7 +46,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   useEffect(() => {
     const cerrar = (e: MouseEvent | TouchEvent) => {
       // En móvil no cerramos con este listener — los botones del panel gestionan sus propios eventos
-      if (window.innerWidth <= 900) return
       const panel = document.getElementById('notif-panel')
       const btn = document.getElementById('notif-btn')
       if (panel && !panel.contains(e.target as Node) && btn && !btn.contains(e.target as Node)) {

@@ -44,7 +44,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }, [])
 
   useEffect(() => {
-    const cerrar = (e: MouseEvent) => {
+    const cerrar = (e: MouseEvent | TouchEvent) => {
+      // En móvil no cerramos con este listener — los botones del panel gestionan sus propios eventos
+      if (window.innerWidth <= 900) return
       const panel = document.getElementById('notif-panel')
       const btn = document.getElementById('notif-btn')
       if (panel && !panel.contains(e.target as Node) && btn && !btn.contains(e.target as Node)) {
@@ -52,7 +54,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       }
     }
     document.addEventListener('mousedown', cerrar)
-    return () => document.removeEventListener('mousedown', cerrar)
+    document.addEventListener('touchstart', cerrar)
+    return () => {
+      document.removeEventListener('mousedown', cerrar)
+      document.removeEventListener('touchstart', cerrar)
+    }
   }, [])
 
   const cerrarSesion = async () => {
@@ -72,6 +78,28 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     }
   }
 
+  const borrarNotif = async (e: React.MouseEvent | React.TouchEvent, id: string) => {
+    e.stopPropagation()
+    e.preventDefault()
+    await supabase.from('notificaciones').delete().eq('id', id)
+    setNotifs(prev => prev.filter(notif => notif.id !== id))
+  }
+
+  const borrarLeidas = async (e: React.MouseEvent | React.TouchEvent) => {
+    e.stopPropagation()
+    e.preventDefault()
+    const borrables = notifs.filter(n =>
+      n.tipo === 'completado' || n.tipo === 'dia_asignado' || n.tipo === 'dia_soltado' ||
+      n.tipo === 'cadena_completada' || (n.tipo === 'cadena' && n.leida) || (n.tipo === 'aceptacion' && n.leida)
+    )
+    await supabase.from('notificaciones').delete().in('id', borrables.map(n => n.id))
+    setNotifs(prev => prev.filter(n => !borrables.find(b => b.id === n.id)))
+  }
+
+  const esBorrable = (n: Notificacion) =>
+    n.tipo === 'completado' || n.tipo === 'dia_asignado' || n.tipo === 'dia_soltado' ||
+    n.tipo === 'cadena_completada' || (n.tipo === 'cadena' && n.leida) || (n.tipo === 'aceptacion' && n.leida)
+
   const noLeidas = notifs.filter(n => !n.leida).length
   const enlaces = [
     { href: '/calendario', label: 'CALENDARIO' },
@@ -79,46 +107,80 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   ]
 
   const PanelNotificaciones = () => (
-    <div id="notif-panel" className="notif-panel">
+    <div id="notif-panel" className="notif-panel" onTouchStart={e => e.stopPropagation()}>
       <div className="notif-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <span>NOTIFICACIONES</span>
-        {notifs.some(n => n.tipo === 'completado' || n.tipo === 'dia_asignado' || n.tipo === 'dia_soltado' || n.tipo === 'cadena_completada' || (n.tipo === 'cadena' && n.leida) || (n.tipo === 'aceptacion' && n.leida)) && (
-          <button style={{ background: 'none', border: '1px solid #2a2420', color: '#6a6058', cursor: 'pointer', fontSize: '0.65rem', padding: '0.2rem 0.5rem', borderRadius: '2px', fontFamily: "'Bebas Neue', sans-serif", letterSpacing: '1px' }}
-            onClick={async (e) => {
-              e.stopPropagation()
-              const borrables = notifs.filter(n => n.tipo === 'completado' || n.tipo === 'dia_asignado' || n.tipo === 'dia_soltado' || n.tipo === 'cadena_completada' || (n.tipo === 'cadena' && n.leida) || (n.tipo === 'aceptacion' && n.leida))
-              await supabase.from('notificaciones').delete().in('id', borrables.map(n => n.id))
-              setNotifs(prev => prev.filter(n => !borrables.find(b => b.id === n.id)))
-            }}>BORRAR LEÍDAS</button>
+        {notifs.some(esBorrable) && (
+          <button
+            style={{
+              background: 'none', border: '1px solid #d0c8c0', color: '#6a6058', cursor: 'pointer',
+              fontSize: '0.65rem', padding: '0.4rem 0.8rem', borderRadius: '2px',
+              fontFamily: "'Bebas Neue', sans-serif", letterSpacing: '1px',
+              minHeight: '36px', touchAction: 'manipulation',
+            }}
+            onClick={borrarLeidas}
+            onTouchEnd={borrarLeidas}
+          >
+            BORRAR LEÍDAS
+          </button>
         )}
       </div>
       {notifs.length === 0 ? (
         <div className="notif-vacia">Sin notificaciones</div>
       ) : (
         notifs.map(n => (
-          <div key={n.id} className={`notif-item${!n.leida ? ' no-leida' : ''}`} onClick={() => marcarLeida(n)}>
+          <div
+            key={n.id}
+            className={`notif-item${!n.leida ? ' no-leida' : ''}`}
+            onClick={() => marcarLeida(n)}
+          >
             <div className="notif-titulo">{n.titulo}</div>
             <div className="notif-mensaje">{n.mensaje}</div>
             {n.tipo === 'cadena' && n.referencia_id && (
-              <button style={{ marginTop: '0.4rem', background: '#34d399', color: '#0f0f0f', border: 'none', padding: '0.3rem 0.8rem', fontFamily: "'Bebas Neue', sans-serif", fontSize: '0.75rem', letterSpacing: '1px', cursor: 'pointer', borderRadius: '2px' }}
+              <button
+                style={{
+                  marginTop: '0.4rem', background: '#34d399', color: '#0f0f0f', border: 'none',
+                  padding: '0.4rem 0.8rem', fontFamily: "'Bebas Neue', sans-serif", fontSize: '0.75rem',
+                  letterSpacing: '1px', cursor: 'pointer', borderRadius: '2px',
+                  minHeight: '36px', touchAction: 'manipulation',
+                }}
                 onClick={async (e) => {
                   e.stopPropagation()
+                  e.preventDefault()
                   const { data: { user } } = await supabase.auth.getUser()
                   if (user) {
                     await supabase.rpc('confirmar_cadena', { p_cadena_id: n.referencia_id, p_user_id: user.id })
                     await marcarLeida(n)
                   }
-                }}>✓ CONFIRMAR CADENA</button>
+                }}
+                onTouchEnd={async (e) => {
+                  e.stopPropagation()
+                  e.preventDefault()
+                  const { data: { user } } = await supabase.auth.getUser()
+                  if (user) {
+                    await supabase.rpc('confirmar_cadena', { p_cadena_id: n.referencia_id, p_user_id: user.id })
+                    await marcarLeida(n)
+                  }
+                }}
+              >
+                ✓ CONFIRMAR CADENA
+              </button>
             )}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.2rem' }}>
               <div className="notif-fecha">{new Date(n.created_at).toLocaleDateString('es-ES')}</div>
-              {(n.tipo === 'completado' || n.tipo === 'dia_asignado' || n.tipo === 'dia_soltado' || n.tipo === 'cadena_completada' || (n.tipo === 'cadena' && n.leida) || (n.tipo === 'aceptacion' && n.leida)) && (
-                <button style={{ background: 'none', border: 'none', color: '#4a4038', cursor: 'pointer', fontSize: '0.75rem', padding: '0 0.25rem' }}
-                  onClick={async (e) => {
-                    e.stopPropagation()
-                    await supabase.from('notificaciones').delete().eq('id', n.id)
-                    setNotifs(prev => prev.filter(notif => notif.id !== n.id))
-                  }}>✕</button>
+              {esBorrable(n) && (
+                <button
+                  style={{
+                    background: 'none', border: 'none', color: '#4a4038', cursor: 'pointer',
+                    fontSize: '1rem', padding: '0.5rem', minWidth: '44px', minHeight: '44px',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    touchAction: 'manipulation',
+                  }}
+                  onClick={(e) => borrarNotif(e, n.id)}
+                  onTouchEnd={(e) => borrarNotif(e, n.id)}
+                >
+                  ✕
+                </button>
               )}
             </div>
           </div>
@@ -165,14 +227,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           .nav-right { display: none; }
           .hamburger { display: block; color: #1a1612; }
           .notif-btn-movil { display: flex !important; }
-.nav-centro-movil { display: flex !important; }
+          .nav-centro-movil { display: flex !important; }
           .menu-movil { display: flex; flex-direction: column; background: #f5f0eb; border-bottom: 1px solid #e0d8d0; padding: 1rem; gap: 0.5rem; }
           .menu-movil.cerrado { display: none; }
           .nav-link-movil { font-family: 'Bebas Neue', sans-serif; font-size: 1rem; letter-spacing: 2px; color: #4a4038; text-decoration: none; padding: 0.75rem 1rem; border-radius: 2px; }
           .nav-link-movil.active { color: #c4a520; background: #ede8e0; }
           .menu-usuario { font-size: 0.8rem; color: #4a4038; padding: 0.5rem 1rem; border-top: 1px solid #e0d8d0; margin-top: 0.25rem; }
           .btn-salir-movil { background: transparent; border: 1px solid #e0d8d0; color: #4a4038; padding: 0.6rem 1rem; font-family: 'Bebas Neue', sans-serif; font-size: 0.85rem; letter-spacing: 1px; cursor: pointer; border-radius: 2px; text-align: left; }
-          .notif-panel { position: fixed !important; left: 1rem !important; right: 1rem !important; top: 56px !important; width: auto !important; background: #fff !important; border-color: #e0d8d0 !important; }
+          .notif-panel { position: fixed !important; left: 1rem !important; right: 1rem !important; top: 56px !important; width: auto !important; background: #fff !important; border-color: #e0d8d0 !important; z-index: 200 !important; }
           .notif-header { color: #1a1612 !important; border-bottom-color: #e0d8d0 !important; }
           .notif-titulo { color: #1a1612 !important; }
           .notif-mensaje { color: #4a4038 !important; }

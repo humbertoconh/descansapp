@@ -53,10 +53,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       }
     }
     document.addEventListener('mousedown', cerrar)
-    document.addEventListener('touchstart', cerrar)
+    document.addEventListener('touchend', cerrar)
     return () => {
       document.removeEventListener('mousedown', cerrar)
-      document.removeEventListener('touchstart', cerrar)
+      document.removeEventListener('touchend', cerrar)
     }
   }, [])
 

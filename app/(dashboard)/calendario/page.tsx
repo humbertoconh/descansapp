@@ -676,7 +676,7 @@ return (
           <div className="modal" onClick={e => e.stopPropagation()}>
             <h3>ACEPTAR INTERCAMBIO</h3>
             <p style={{ fontSize:'0.85rem', color:'#8a8070', marginBottom:'1rem' }}>
-              <strong style={{ color:'#e8e0d4' }}>{modalAceptar.profiles?.nombre}</strong> quiere el{' '}
+              <strong style={{ color:'#1a1612' }}>{modalAceptar.profiles?.nombre}</strong> quiere el{' '}
               <strong style={{ color:'#f5c518' }}>{fmt(modalAceptar.dia_pedido)}</strong>.<br />
               Elige qué día de los que ofrece quieres tú:
             </p>

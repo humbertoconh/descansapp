@@ -7,25 +7,60 @@ import type { Profile } from '@/lib/types'
 const GRUPO_COLOR: Record<string, string> = {
   'Capataces': '#3b82f6',
   'Clasificadores': '#10b981',
-  'G-A': '#f59e0b',
-  'G-B': '#f59e0b',
-  'G-C': '#f59e0b',
-  'G-D': '#f59e0b',
-  'G-DA': '#f59e0b',
-  'G-DB': '#f59e0b',
-  'G-E': '#f59e0b',
-  'G-I': '#f59e0b',
-  'SIN-F': '#f59e0b',
+  'G-A': '#f59e0b', 'G-B': '#f59e0b', 'G-C': '#f59e0b', 'G-D': '#f59e0b',
+  'G-DA': '#f59e0b', 'G-DB': '#f59e0b', 'G-E': '#f59e0b', 'G-I': '#f59e0b', 'SIN-F': '#f59e0b',
+}
+
+const ACCION_COLOR: Record<string, string> = {
+  solicitud_creada: '#60a5fa',
+  solicitud_cancelada: '#f87171',
+  intercambio_aceptado: '#fb923c',
+  intercambio_confirmado: '#34d399',
+  dia_soltado: '#a78bfa',
+  dia_asignado: '#34d399',
+  lista_espera_entrada: '#f472b6',
+  lista_espera_salida: '#6a6058',
+  usuario_registrado: '#60a5fa',
+  usuario_aprobado: '#34d399',
+  usuario_eliminado: '#f87171',
+}
+
+const ACCION_LABEL: Record<string, string> = {
+  solicitud_creada: 'Solicitud creada',
+  solicitud_cancelada: 'Solicitud cancelada',
+  intercambio_aceptado: 'Intercambio aceptado',
+  intercambio_confirmado: 'Intercambio confirmado',
+  dia_soltado: 'Día soltado',
+  dia_asignado: 'Día asignado',
+  lista_espera_entrada: 'Lista espera entrada',
+  lista_espera_salida: 'Lista espera salida',
+  usuario_registrado: 'Usuario registrado',
+  usuario_aprobado: 'Usuario aprobado',
+  usuario_eliminado: 'Usuario eliminado',
+}
+
+type Auditoria = {
+  id: string
+  created_at: string
+  user_chapa: string
+  user_nombre: string
+  accion: string
+  tabla: string
+  descripcion: string
 }
 
 export default function AdminUsuariosPage() {
   const supabase = createClient()
   const [pendientes, setPendientes] = useState<Profile[]>([])
   const [aprobados, setAprobados] = useState<Profile[]>([])
+  const [auditoria, setAuditoria] = useState<Auditoria[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadingAuditoria, setLoadingAuditoria] = useState(false)
   const [accionando, setAccionando] = useState<string | null>(null)
-  const [tab, setTab] = useState<'pendientes' | 'aprobados'>('pendientes')
+  const [tab, setTab] = useState<'pendientes' | 'aprobados' | 'auditoria'>('pendientes')
   const [confirmarEliminar, setConfirmarEliminar] = useState<Profile | null>(null)
+  const [filtroAccion, setFiltroAccion] = useState('')
+  const [filtroUsuario, setFiltroUsuario] = useState('')
 
   const fetchUsuarios = async () => {
     const { data } = await supabase.from('profiles').select('*').order('created_at', { ascending: false })
@@ -36,7 +71,15 @@ export default function AdminUsuariosPage() {
     setLoading(false)
   }
 
+  const fetchAuditoria = async () => {
+    setLoadingAuditoria(true)
+    const { data } = await supabase.from('auditoria').select('*').order('created_at', { ascending: false }).limit(200)
+    setAuditoria(data || [])
+    setLoadingAuditoria(false)
+  }
+
   useEffect(() => { fetchUsuarios() }, [])
+  useEffect(() => { if (tab === 'auditoria') fetchAuditoria() }, [tab])
 
   const aprobar = async (id: string) => {
     setAccionando(id)
@@ -71,13 +114,19 @@ export default function AdminUsuariosPage() {
     await supabase.from('lista_espera').delete().eq('user_id', usuario.id)
     await supabase.from('dias_sueltos').delete().eq('user_id', usuario.id)
     await supabase.from('notificaciones').delete().eq('user_id', usuario.id)
-await supabase.from('dias_sueltos').update({ asignado_a: null }).eq('asignado_a', usuario.id)
-await supabase.from('profiles').delete().eq('id', usuario.id)
+    await supabase.from('dias_sueltos').update({ asignado_a: null }).eq('asignado_a', usuario.id)
+    await supabase.from('profiles').delete().eq('id', usuario.id)
     try { await supabase.rpc('eliminar_usuario_auth', { p_user_id: usuario.id }) } catch {}
     setConfirmarEliminar(null)
     await fetchUsuarios()
     setAccionando(null)
   }
+
+  const auditoriaFiltrada = auditoria.filter(a => {
+    const matchAccion = !filtroAccion || a.accion === filtroAccion
+    const matchUsuario = !filtroUsuario || (a.user_nombre?.toLowerCase().includes(filtroUsuario.toLowerCase()) || a.user_chapa?.includes(filtroUsuario))
+    return matchAccion && matchUsuario
+  })
 
   const lista = tab === 'pendientes' ? pendientes : aprobados
 
@@ -101,7 +150,7 @@ await supabase.from('profiles').delete().eq('id', usuario.id)
         thead th { text-align: left; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 1.5px; color: #6a6058; padding: 0.75rem 1rem; border-bottom: 1px solid #2a2420; }
         tbody tr { border-bottom: 1px solid #1e1a16; transition: background 0.1s; }
         tbody tr:hover { background: #1a1612; }
-        tbody td { padding: 1rem; font-size: 0.875rem; vertical-align: middle; }
+        tbody td { padding: 0.75rem 1rem; font-size: 0.875rem; vertical-align: middle; }
         .chapa { font-family: 'Bebas Neue', sans-serif; font-size: 1.1rem; color: #f5c518; letter-spacing: 1px; }
         .nombre strong { display: block; color: #e8e0d4; }
         .grupo-pill { display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.75rem; padding: 0.25rem 0.6rem; border-radius: 2px; font-weight: 500; }
@@ -125,12 +174,20 @@ await supabase.from('profiles').delete().eq('id', usuario.id)
         .modal-confirmar p { font-size: 0.85rem; color: #c8c0b4; line-height: 1.6; margin-bottom: 1.5rem; }
         .modal-confirmar strong { color: #f5c518; }
         .modal-btns { display: flex; gap: 0.75rem; }
+        .filtros { display: flex; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
+        .filtros input, .filtros select { background: #1a1612; border: 1px solid #2a2420; color: #e8e0d4; padding: 0.5rem 0.75rem; font-family: 'DM Sans', sans-serif; font-size: 0.85rem; border-radius: 2px; outline: none; }
+        .filtros input:focus, .filtros select:focus { border-color: #f5c518; }
+        .filtros select option { background: #1a1612; }
+        .accion-pill { font-size: 0.7rem; padding: 0.2rem 0.6rem; border-radius: 2px; font-family: 'Bebas Neue', sans-serif; letter-spacing: 1px; }
+        .desc-auditoria { font-size: 0.82rem; color: #c8c0b4; }
+        .btn-refresh { background: transparent; border: 1px solid #2a2420; color: #6a6058; padding: 0.5rem 1rem; font-family: 'Bebas Neue', sans-serif; font-size: 0.85rem; letter-spacing: 1px; cursor: pointer; border-radius: 2px; }
+        .btn-refresh:hover { color: #f5c518; border-color: #f5c518; }
       `}</style>
       <div className="admin-page">
         <div className="admin-header">
           <div>
-            <h1>GESTIÓN DE USUARIOS</h1>
-            <p>Aprueba o rechaza las solicitudes de registro</p>
+            <h1>PANEL DE ADMINISTRACIÓN</h1>
+            <p>Gestión de usuarios y registro de actividad</p>
           </div>
           {pendientes.length > 0 && (
             <span className="badge-count">{pendientes.length} PENDIENTE{pendientes.length > 1 ? 'S' : ''}</span>
@@ -143,8 +200,71 @@ await supabase.from('profiles').delete().eq('id', usuario.id)
           <button className={`tab-btn ${tab === 'aprobados' ? 'active' : ''}`} onClick={() => setTab('aprobados')}>
             APROBADOS <span className="tab-num">{aprobados.length}</span>
           </button>
+          <button className={`tab-btn ${tab === 'auditoria' ? 'active' : ''}`} onClick={() => setTab('auditoria')}>
+            AUDITORÍA
+          </button>
         </div>
-        {loading ? (
+
+        {tab === 'auditoria' ? (
+          <>
+            <div className="filtros">
+              <input
+                type="text"
+                placeholder="Buscar por nombre o chapa..."
+                value={filtroUsuario}
+                onChange={e => setFiltroUsuario(e.target.value)}
+                style={{ minWidth: '220px' }}
+              />
+              <select value={filtroAccion} onChange={e => setFiltroAccion(e.target.value)}>
+                <option value="">Todas las acciones</option>
+                {Object.entries(ACCION_LABEL).map(([key, label]) => (
+                  <option key={key} value={key}>{label}</option>
+                ))}
+              </select>
+              <button className="btn-refresh" onClick={fetchAuditoria}>↻ ACTUALIZAR</button>
+            </div>
+            {loadingAuditoria ? (
+              <div className="cargando">CARGANDO...</div>
+            ) : auditoriaFiltrada.length === 0 ? (
+              <div className="empty">
+                <span className="icono">📋</span>
+                <p>No hay registros de actividad</p>
+              </div>
+            ) : (
+              <table>
+                <thead>
+                  <tr>
+                    <th>Fecha y hora</th>
+                    <th>Chapa</th>
+                    <th>Usuario</th>
+                    <th>Acción</th>
+                    <th>Descripción</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {auditoriaFiltrada.map(a => {
+                    const color = ACCION_COLOR[a.accion] || '#6a6058'
+                    const label = ACCION_LABEL[a.accion] || a.accion
+                    const fecha = new Date(a.created_at).toLocaleString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+                    return (
+                      <tr key={a.id}>
+                        <td className="fecha">{fecha}</td>
+                        <td className="chapa" style={{ fontSize: '0.9rem' }}>{a.user_chapa || '—'}</td>
+                        <td style={{ fontSize: '0.85rem', color: '#e8e0d4' }}>{a.user_nombre || '—'}</td>
+                        <td>
+                          <span className="accion-pill" style={{ background: `${color}22`, color }}>
+                            {label}
+                          </span>
+                        </td>
+                        <td className="desc-auditoria">{a.descripcion}</td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            )}
+          </>
+        ) : loading ? (
           <div className="cargando">CARGANDO...</div>
         ) : lista.length === 0 ? (
           <div className="empty">

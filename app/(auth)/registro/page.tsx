@@ -7,6 +7,8 @@ import { getGrupoFromChapa, validarChapa } from '@/lib/types'
 
 type Step = 'form' | 'pendiente'
 
+const GRUPOS_MANIPULADORES = ['G-A', 'G-B', 'G-C', 'G-D', 'G-DA', 'G-DB', 'G-E', 'G-I', 'SIN-F']
+
 export default function RegistroPage() {
   const supabase = createClient()
   const [step, setStep] = useState<Step>('form')
@@ -15,12 +17,17 @@ export default function RegistroPage() {
   const [form, setForm] = useState({
     nombre: '', apellidos: '', chapa: '', email: '', telefono: '', password: '', confirmar: '',
   })
+  const [grupoManipulador, setGrupoManipulador] = useState('')
+
+  const esManipulador = form.chapa.length === 5 && (form.chapa.startsWith('71') || form.chapa.startsWith('72'))
 
   const grupoPreview = form.chapa.length === 5 && validarChapa(form.chapa)
-    ? getGrupoFromChapa(form.chapa) : null
+    ? (esManipulador ? (grupoManipulador || null) : getGrupoFromChapa(form.chapa))
+    : null
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setError(null)
+    if (e.target.name === 'chapa') setGrupoManipulador('')
     setForm(prev => ({ ...prev, [e.target.name]: e.target.value }))
   }
 
@@ -31,6 +38,10 @@ export default function RegistroPage() {
     setError(null)
     if (!validarChapa(form.chapa)) {
       setError('La chapa debe tener 5 dígitos y empezar por 24, 63, 71 o 72.')
+      return
+    }
+    if (esManipulador && !grupoManipulador) {
+      setError('Debes seleccionar tu grupo.')
       return
     }
     if (!validarTelefono(form.telefono)) {
@@ -47,12 +58,12 @@ export default function RegistroPage() {
       setError(authError?.message || 'Error al crear la cuenta.')
       setLoading(false); return
     }
+    const grupo = esManipulador ? grupoManipulador : getGrupoFromChapa(form.chapa)
     const { error: profileError } = await supabase.from('profiles').insert({
-  id: authData.user.id, chapa: form.chapa,
-  nombre: form.nombre.trim(), apellidos: form.apellidos.trim(),
-  telefono: form.telefono.trim(), aprobado: false, grupo: getGrupoFromChapa(form.chapa),
-  grupo: getGrupoFromChapa(form.chapa),
-})
+      id: authData.user.id, chapa: form.chapa,
+      nombre: form.nombre.trim(), apellidos: form.apellidos.trim(),
+      telefono: form.telefono.trim(), aprobado: false, grupo,
+    })
     if (profileError) {
       if (profileError.code === '23505') setError('Esa chapa ya está registrada.')
       else setError(profileError.message)
@@ -98,6 +109,11 @@ export default function RegistroPage() {
         .grupo-preview .dot { width: 6px; height: 6px; border-radius: 50%; background: #f5c518; animation: pulse 1.5s infinite; }
         .grupo-preview span { color: #f5c518; font-weight: 500; }
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+        .grupo-selector { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.4rem; margin-top: 0.25rem; }
+        .grupo-btn { background: #1e1a16; border: 1px solid #2e2820; color: #a8a098; padding: 0.5rem 0.25rem; font-family: 'Bebas Neue', sans-serif; font-size: 0.85rem; letter-spacing: 1px; cursor: pointer; border-radius: 2px; text-align: center; transition: all 0.15s; }
+        .grupo-btn:hover { border-color: #f5c518; color: #f5c518; }
+        .grupo-btn.selected { background: #2a2010; border-color: #f5c518; color: #f5c518; }
+        .grupo-label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1.5px; color: #e8e0d4; font-weight: 500; margin-bottom: 0.35rem; }
         .error-box { background: #2a1210; border: 1px solid #5a2020; border-left: 3px solid #e05050; padding: 0.75rem 1rem; font-size: 0.85rem; color: #e08080; border-radius: 2px; }
         .btn-submit { width: 100%; background: #f5c518; color: #0f0f0f; border: none; padding: 0.9rem; font-family: 'Bebas Neue', sans-serif; font-size: 1.1rem; letter-spacing: 2px; cursor: pointer; transition: background 0.15s; border-radius: 2px; margin-top: 0.5rem; }
         .btn-submit:hover:not(:disabled) { background: #ffd740; }
@@ -116,7 +132,7 @@ export default function RegistroPage() {
             <div className="grupos-list">
               <div className="grupo-item"><span className="grupo-badge">24XXX</span>Capataces</div>
               <div className="grupo-item"><span className="grupo-badge">63XXX</span>Clasificadores</div>
-              <div className="grupo-item"><span className="grupo-badge">71/72XXX</span>Manipuladores</div>
+              <div className="grupo-item"><span className="grupo-badge">71/72XXX</span>G-A, G-B, G-C...</div>
             </div>
           </div>
         </div>
@@ -154,6 +170,23 @@ export default function RegistroPage() {
                   <span className="hint">Para notificaciones de intercambios</span>
                 </div>
               </div>
+              {esManipulador && (
+                <div className="field">
+                  <div className="grupo-label">Selecciona tu grupo</div>
+                  <div className="grupo-selector">
+                    {GRUPOS_MANIPULADORES.map(g => (
+                      <button
+                        key={g}
+                        type="button"
+                        className={`grupo-btn${grupoManipulador === g ? ' selected' : ''}`}
+                        onClick={() => setGrupoManipulador(g)}
+                      >
+                        {g}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
               <div className="divider">acceso</div>
               <div className="field">
                 <label>Correo electrónico</label>

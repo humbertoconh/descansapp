@@ -71,7 +71,8 @@ export default function AdminUsuariosPage() {
     await supabase.from('lista_espera').delete().eq('user_id', usuario.id)
     await supabase.from('dias_sueltos').delete().eq('user_id', usuario.id)
     await supabase.from('notificaciones').delete().eq('user_id', usuario.id)
-    await supabase.from('profiles').delete().eq('id', usuario.id)
+await supabase.from('dias_sueltos').update({ asignado_a: null }).eq('asignado_a', usuario.id)
+await supabase.from('profiles').delete().eq('id', usuario.id)
     try { await supabase.rpc('eliminar_usuario_auth', { p_user_id: usuario.id }) } catch {}
     setConfirmarEliminar(null)
     await fetchUsuarios()

@@ -537,8 +537,8 @@ function VacacionesContent() {
                         {tieneInfo && !estaBloqueado && (
                           <div className="dia-barras">
                             {ofrece.slice(0, 2).map((s, idx) => (
-                              <div key={idx} className="dia-barra" style={{ background: colorPorUsuario[s.user_id] || '#60a5fa', opacity: s.esVentana ? 0.3 : 0.9 }} />
-                            ))}
+  <div key={idx} className="dia-barra" style={{ background: '#60a5fa', opacity: s.esVentana ? 0.3 : 0.9 }} />
+))}
                             {busca.slice(0, 2).map((s, idx) => (
                               <div key={idx} className="dia-barra" style={{ background: '#f87171', opacity: s.esVentana ? 0.3 : 0.75 }} />
                             ))}

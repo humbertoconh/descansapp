@@ -252,7 +252,7 @@ function VacacionesContent() {
         .dia.vacio { cursor: default; pointer-events: none; background: transparent; border: none; }
         .dia.hoy { border-color: #f5c518 !important; }
         .dia.bloqueado { background: #e8e4e0 !important; color: #b8b0a8 !important; cursor: default; pointer-events: none; }
-        .dia.vacacional-bg { background: #f0ebe5; }
+        .dia.vacacional-bg { background: #fdf8e8; }
         .dia-num { font-size: 0.7rem; line-height: 1; position: relative; z-index: 2; }
         .dia-barras { position: absolute; bottom: 0; left: 0; right: 0; display: flex; flex-direction: column; gap: 1px; }
         .dia-barra { height: 4px; width: 100%; opacity: 0.85; }

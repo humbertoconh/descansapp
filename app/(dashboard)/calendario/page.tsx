@@ -460,6 +460,14 @@ return (
           <div>
             <h1>CALENDARIO</h1>
             <p>Pincha cualquier día para ver o crear solicitudes de intercambio</p>
+{companyeros.find(c => c.id === miId)?.grupo && (
+  <div style={{ marginTop: '0.4rem', display: 'inline-flex', alignItems: 'center', gap: '0.5rem', background: '#fff', border: '1px solid #e0d8d0', borderRadius: '3px', padding: '0.3rem 0.8rem' }}>
+    <span style={{ fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '1.5px', color: '#8a8070' }}>Tu grupo:</span>
+    <span style={{ fontFamily: 'Bebas Neue, sans-serif', fontSize: '1rem', letterSpacing: '2px', color: '#c4a520' }}>
+      {companyeros.find(c => c.id === miId)?.grupo}
+    </span>
+  </div>
+)}
           </div>
           <div className="header-right">
             <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>

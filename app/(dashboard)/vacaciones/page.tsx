@@ -98,7 +98,7 @@ function DatePicker({ value, onChange, label, mesInicial, minDate, maxDate }: {
 
   const esDiaValido = (dia: number) => {
     const fecha = new Date(anyo, mes, dia)
-    if (minDate && fecha <= minDate) return false
+    if (minDate && fecha < minDate) return false
     if (maxDate && fecha > maxDate) return false
     return true
   }

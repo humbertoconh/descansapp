@@ -848,7 +848,7 @@ function VacacionesContent() {
                     </strong>
                   </div>
                   {/* Aceptar: abrir abajo el Desde, arriba el Hasta */}
-                  <DatePicker label="Desde" value={aceptDesde} abreHacia="abajo"
+                  <DatePicker label="Desde" value={aceptDesde} abreHacia="arriba"
                     onChange={v => { setAceptDesde(v); if (aceptHasta && v > aceptHasta) setAceptHasta('') }}
                     minDate={caso === 'exacto-flexible' ? new Date(modalAceptar.buscado_ventana_desde + 'T00:00:00') : new Date(modalAceptar.ofrecido_ventana_desde + 'T00:00:00')}
                     maxDate={caso === 'exacto-flexible' ? new Date(modalAceptar.buscado_ventana_hasta + 'T00:00:00') : new Date(modalAceptar.ofrecido_ventana_hasta + 'T00:00:00')}
@@ -878,7 +878,7 @@ function VacacionesContent() {
                     <label>Número de días que ofreces / buscas</label>
                     <input type="number" min={1} max={30} value={aceptNumDias} onChange={e => setAceptNumDias(Number(e.target.value))} />
                   </div>
-                  <DatePicker label="Tu ventana desde" value={aceptVentanaDesde} abreHacia="abajo" onChange={setAceptVentanaDesde} minDate={limite7dias} />
+                  <DatePicker label="Tu ventana desde" value={aceptVentanaDesde} abreHacia="arriba" onChange={setAceptVentanaDesde} minDate={limite7dias} />
                   <DatePicker label="Tu ventana hasta" value={aceptVentanaHasta} abreHacia="arriba" onChange={setAceptVentanaHasta} mesInicial={mesDesdeVentanaAcept} minDate={aceptVentanaDesde ? parseISO(aceptVentanaDesde) : limite7dias} />
                   {aceptVentanaDesde && aceptVentanaHasta && <div className="ventana-aviso">💡 El otro elegirá {aceptNumDias} días dentro de tu ventana</div>}
                 </>

@@ -82,11 +82,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     setNotifs(prev => prev.map(notif => notif.id === n.id ? { ...notif, leida: true } : notif))
     setMostrarNotifs(false)
     if (n.referencia_id) {
-      const { data: sol } = await supabase.from('solicitudes').select('dia_pedido').eq('id', n.referencia_id).single()
-      if (sol) {
-        window.location.href = `/calendario?dia=${sol.dia_pedido}`
-      }
-    }
+  const { data: sol } = await supabase.from('solicitudes').select('dia_pedido').eq('id', n.referencia_id).single()
+  if (sol) {
+    window.location.href = `/calendario?dia=${sol.dia_pedido}`
+  }
+  // Si no encuentra en solicitudes (es de vacaciones), simplemente cierra
+}
   }
 
   const borrarNotif = async (e: React.MouseEvent | React.TouchEvent, id: string) => {

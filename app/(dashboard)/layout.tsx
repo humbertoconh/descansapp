@@ -21,18 +21,31 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const pathname = usePathname()
   const supabase = createClient()
   const [nombre, setNombre] = useState('')
+  const [chapa, setChapa] = useState('')
+  const [emailUsuario, setEmailUsuario] = useState('')
   const [isAdmin, setIsAdmin] = useState(false)
   const [menuAbierto, setMenuAbierto] = useState(false)
   const [notifs, setNotifs] = useState<Notificacion[]>([])
   const [mostrarNotifs, setMostrarNotifs] = useState(false)
   const [miId, setMiId] = useState('')
 
+  // Modal contacto
+  const [modalContacto, setModalContacto] = useState(false)
+  const [mensajeContacto, setMensajeContacto] = useState('')
+  const [enviandoContacto, setEnviandoContacto] = useState(false)
+  const [contactoEnviado, setContactoEnviado] = useState(false)
+
   const cargar = async () => {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
     setMiId(user.id)
-    const { data: profile } = await supabase.from('profiles').select('nombre, is_admin').eq('id', user.id).single()
-    if (profile) { setNombre(profile.nombre); setIsAdmin(profile.is_admin) }
+    setEmailUsuario(user.email || '')
+    const { data: profile } = await supabase.from('profiles').select('nombre, apellidos, chapa, is_admin').eq('id', user.id).single()
+    if (profile) {
+      setNombre(profile.nombre)
+      setChapa(profile.chapa)
+      setIsAdmin(profile.is_admin)
+    }
     const { data: n } = await supabase.from('notificaciones').select('*').eq('user_id', user.id).order('created_at', { ascending: false }).limit(20)
     setNotifs(n || [])
   }
@@ -45,7 +58,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   useEffect(() => {
     const cerrar = (e: MouseEvent | TouchEvent) => {
-      // En móvil no cerramos con este listener — los botones del panel gestionan sus propios eventos
       const panel = document.getElementById('notif-panel')
       const btn = document.getElementById('notif-btn')
       if (panel && !panel.contains(e.target as Node) && btn && !btn.contains(e.target as Node)) {
@@ -95,16 +107,40 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     setNotifs(prev => prev.filter(n => !borrables.find(b => b.id === n.id)))
   }
 
+  const enviarContacto = async () => {
+    if (!mensajeContacto.trim()) return
+    setEnviandoContacto(true)
+    await enviarEmail(
+      'descansapp@ctmvalencia.com',
+      `📩 Mensaje de contacto - ${nombre} (chapa ${chapa})`,
+      templateNotificacion(
+        'Mensaje de contacto recibido',
+        `<strong>Nombre:</strong> ${nombre}<br>
+        <strong>Chapa:</strong> ${chapa}<br>
+        <strong>Email:</strong> ${emailUsuario}<br><br>
+        <strong>Mensaje:</strong><br>${mensajeContacto.replace(/\n/g, '<br>')}`
+      )
+    )
+    setEnviandoContacto(false)
+    setContactoEnviado(true)
+    setMensajeContacto('')
+    setTimeout(() => {
+      setContactoEnviado(false)
+      setModalContacto(false)
+    }, 2500)
+  }
+
   const esBorrable = (n: Notificacion) =>
     n.tipo === 'completado' || n.tipo === 'dia_asignado' || n.tipo === 'dia_soltado' ||
     n.tipo === 'cadena_completada' || (n.tipo === 'cadena' && n.leida) || (n.tipo === 'aceptacion' && n.leida)
 
   const noLeidas = notifs.filter(n => !n.leida).length
+
   const enlaces = [
-  { href: '/calendario', label: 'DESCANSOS' },
-  ...(isAdmin ? [{ href: '/vacaciones', label: 'VACACIONES' }] : []),
-  ...(isAdmin ? [{ href: '/admin/usuarios', label: 'USUARIOS' }] : []),
-]
+    { href: '/calendario', label: 'DESCANSOS' },
+    { href: '/vacaciones', label: 'VACACIONES' },
+    ...(isAdmin ? [{ href: '/admin/usuarios', label: 'USUARIOS' }] : []),
+  ]
 
   const PanelNotificaciones = () => (
     <div id="notif-panel" className="notif-panel" onTouchStart={e => e.stopPropagation()}>
@@ -112,75 +148,32 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <span>NOTIFICACIONES</span>
         {notifs.some(esBorrable) && (
           <button
-            style={{
-              background: 'none', border: '1px solid #d0c8c0', color: '#6a6058', cursor: 'pointer',
-              fontSize: '0.65rem', padding: '0.4rem 0.8rem', borderRadius: '2px',
-              fontFamily: "'Bebas Neue', sans-serif", letterSpacing: '1px',
-              minHeight: '36px', touchAction: 'manipulation',
-            }}
-            onClick={borrarLeidas}
-            onTouchEnd={borrarLeidas}
-          >
-            BORRAR LEÍDAS
-          </button>
+            style={{ background: 'none', border: '1px solid #d0c8c0', color: '#6a6058', cursor: 'pointer', fontSize: '0.65rem', padding: '0.4rem 0.8rem', borderRadius: '2px', fontFamily: "'Bebas Neue', sans-serif", letterSpacing: '1px', minHeight: '36px', touchAction: 'manipulation' }}
+            onClick={borrarLeidas} onTouchEnd={borrarLeidas}
+          >BORRAR LEÍDAS</button>
         )}
       </div>
       {notifs.length === 0 ? (
         <div className="notif-vacia">Sin notificaciones</div>
       ) : (
         notifs.map(n => (
-          <div
-            key={n.id}
-            className={`notif-item${!n.leida ? ' no-leida' : ''}`}
-            onClick={() => marcarLeida(n)}
-          >
+          <div key={n.id} className={`notif-item${!n.leida ? ' no-leida' : ''}`} onClick={() => marcarLeida(n)}>
             <div className="notif-titulo">{n.titulo}</div>
             <div className="notif-mensaje">{n.mensaje}</div>
             {n.tipo === 'cadena' && n.referencia_id && (
               <button
-                style={{
-                  marginTop: '0.4rem', background: '#34d399', color: '#0f0f0f', border: 'none',
-                  padding: '0.4rem 0.8rem', fontFamily: "'Bebas Neue', sans-serif", fontSize: '0.75rem',
-                  letterSpacing: '1px', cursor: 'pointer', borderRadius: '2px',
-                  minHeight: '36px', touchAction: 'manipulation',
-                }}
-                onClick={async (e) => {
-                  e.stopPropagation()
-                  e.preventDefault()
-                  const { data: { user } } = await supabase.auth.getUser()
-                  if (user) {
-                    await supabase.rpc('confirmar_cadena', { p_cadena_id: n.referencia_id, p_user_id: user.id })
-                    await marcarLeida(n)
-                  }
-                }}
-                onTouchEnd={async (e) => {
-                  e.stopPropagation()
-                  e.preventDefault()
-                  const { data: { user } } = await supabase.auth.getUser()
-                  if (user) {
-                    await supabase.rpc('confirmar_cadena', { p_cadena_id: n.referencia_id, p_user_id: user.id })
-                    await marcarLeida(n)
-                  }
-                }}
-              >
-                ✓ CONFIRMAR CADENA
-              </button>
+                style={{ marginTop: '0.4rem', background: '#34d399', color: '#0f0f0f', border: 'none', padding: '0.4rem 0.8rem', fontFamily: "'Bebas Neue', sans-serif", fontSize: '0.75rem', letterSpacing: '1px', cursor: 'pointer', borderRadius: '2px', minHeight: '36px', touchAction: 'manipulation' }}
+                onClick={async (e) => { e.stopPropagation(); e.preventDefault(); const { data: { user } } = await supabase.auth.getUser(); if (user) { await supabase.rpc('confirmar_cadena', { p_cadena_id: n.referencia_id, p_user_id: user.id }); await marcarLeida(n) } }}
+                onTouchEnd={async (e) => { e.stopPropagation(); e.preventDefault(); const { data: { user } } = await supabase.auth.getUser(); if (user) { await supabase.rpc('confirmar_cadena', { p_cadena_id: n.referencia_id, p_user_id: user.id }); await marcarLeida(n) } }}
+              >✓ CONFIRMAR CADENA</button>
             )}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.2rem' }}>
               <div className="notif-fecha">{new Date(n.created_at).toLocaleDateString('es-ES')}</div>
               {esBorrable(n) && (
                 <button
-                  style={{
-                    background: 'none', border: 'none', color: '#4a4038', cursor: 'pointer',
-                    fontSize: '1rem', padding: '0.5rem', minWidth: '44px', minHeight: '44px',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    touchAction: 'manipulation',
-                  }}
-                  onClick={(e) => borrarNotif(e, n.id)}
-                  onTouchEnd={(e) => borrarNotif(e, n.id)}
-                >
-                  ✕
-                </button>
+                  style={{ background: 'none', border: 'none', color: '#4a4038', cursor: 'pointer', fontSize: '1rem', padding: '0.5rem', minWidth: '44px', minHeight: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center', touchAction: 'manipulation' }}
+                  onClick={(e) => borrarNotif(e, n.id)} onTouchEnd={(e) => borrarNotif(e, n.id)}
+                >✕</button>
               )}
             </div>
           </div>
@@ -199,17 +192,19 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         .nav-logo { font-family: 'Bebas Neue', sans-serif; font-size: 1.4rem; letter-spacing: 3px; color: #f5c518; text-decoration: none; }
         .nav-links { display: flex; gap: 0; }
         .nav-link { font-family: 'Bebas Neue', sans-serif; font-size: 0.9rem; letter-spacing: 2px; color: #4a4038; text-decoration: none; padding: 0 1rem; height: 56px; display: flex; align-items: center; border-bottom: 2px solid transparent; transition: color 0.15s; }
-        .nav-link:hover { color: #e8e0d4; }
+        .nav-link:hover { color: #1a1612; }
         .nav-link.active { color: #f5c518; border-bottom-color: #f5c518; }
         .nav-right { display: flex; align-items: center; gap: 1rem; }
         .nav-usuario { font-size: 0.8rem; color: #4a4038; }
         .nav-usuario span { color: #1a1612; font-weight: 500; }
         .btn-salir { background: transparent; border: 1px solid #e0d8d0; color: #4a4038; padding: 0.3rem 0.8rem; font-family: 'Bebas Neue', sans-serif; font-size: 0.8rem; letter-spacing: 1px; cursor: pointer; border-radius: 2px; transition: color 0.15s, border-color 0.15s; }
         .btn-salir:hover { color: #e05050; border-color: #5a2020; }
+        .btn-contacto { background: transparent; border: 1px solid #e0d8d0; color: #4a4038; padding: 0.3rem 0.8rem; font-family: 'Bebas Neue', sans-serif; font-size: 0.8rem; letter-spacing: 1px; cursor: pointer; border-radius: 2px; transition: color 0.15s, border-color 0.15s; }
+        .btn-contacto:hover { color: #c4a520; border-color: #c4a520; }
         .notif-btn { position: relative; background: none; border: none; cursor: pointer; color: #6a6058; font-size: 1.2rem; padding: 0.25rem; transition: color 0.15s; }
-        .notif-btn:hover { color: #e8e0d4; }
+        .notif-btn:hover { color: #1a1612; }
         .notif-badge { position: absolute; top: -2px; right: -4px; background: #e05050; color: #fff; font-size: 0.6rem; width: 16px; height: 16px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: 'Bebas Neue', sans-serif; }
-        .notif-panel { position: absolute; top: 56px; right: 1rem; width: 320px; background: #fff; border: 1px solid #e0d8d0; border-radius: 4px; z-index: 100; max-height: 400px; overflow-y: auto; box-shadow: 0 8px 32px rgba(0,0,0,0.5); }
+        .notif-panel { position: absolute; top: 56px; right: 1rem; width: 320px; background: #fff; border: 1px solid #e0d8d0; border-radius: 4px; z-index: 100; max-height: 400px; overflow-y: auto; box-shadow: 0 8px 32px rgba(0,0,0,0.15); }
         .notif-header { padding: 0.75rem 1rem; border-bottom: 1px solid #e0d8d0; font-family: 'Bebas Neue', sans-serif; font-size: 0.9rem; letter-spacing: 2px; color: #c4a520; }
         .notif-item { padding: 0.75rem 1rem; border-bottom: 1px solid #e0d8d0; cursor: pointer; transition: background 0.1s; }
         .notif-item:hover { background: #f5f0eb; }
@@ -218,14 +213,26 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         .notif-mensaje { font-size: 0.78rem; color: #4a4038; line-height: 1.4; }
         .notif-fecha { font-size: 0.7rem; color: #8a8070; margin-top: 0.2rem; }
         .notif-vacia { padding: 2rem; text-align: center; color: #8a8070; font-size: 0.85rem; }
-        .hamburger { display: none; background: none; border: none; color: #e8e0d4; cursor: pointer; font-size: 1.5rem; padding: 0.25rem; }
+        .hamburger { display: none; background: none; border: none; color: #1a1612; cursor: pointer; font-size: 1.5rem; padding: 0.25rem; }
         .menu-movil { display: none; }
+        .overlay-contacto { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 200; padding: 1rem; }
+        .modal-contacto { background: #fff; border: 1px solid #e0d8d0; border-left: 3px solid #c4a520; border-radius: 4px; padding: 1.5rem; width: 100%; max-width: 460px; }
+        .modal-contacto h3 { font-family: 'Bebas Neue', sans-serif; font-size: 1.3rem; letter-spacing: 2px; color: #c4a520; margin-bottom: 0.5rem; }
+        .modal-contacto p { font-size: 0.82rem; color: #8a8070; margin-bottom: 1rem; line-height: 1.5; }
+        .contacto-info { background: #f5f0eb; border: 1px solid #e0d8d0; border-radius: 3px; padding: 0.6rem 0.8rem; margin-bottom: 1rem; font-size: 0.82rem; color: #4a4038; line-height: 1.8; }
+        .contacto-info span { color: #8a8070; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px; display: block; }
+        .contacto-textarea { width: 100%; background: #f0ebe5; border: 1px solid #d0c8c0; color: #1a1612; padding: 0.75rem; font-family: 'DM Sans', sans-serif; font-size: 0.9rem; border-radius: 2px; outline: none; resize: vertical; min-height: 120px; margin-bottom: 1rem; }
+        .contacto-textarea:focus { border-color: #f5c518; }
+        .modal-btns { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+        .btn-amarillo { background: #f5c518; color: #0f0f0f; border: none; padding: 0.5rem 1rem; font-family: 'Bebas Neue', sans-serif; font-size: 0.9rem; letter-spacing: 1px; cursor: pointer; border-radius: 2px; }
+        .btn-amarillo:disabled { opacity: 0.4; cursor: not-allowed; }
+        .btn-gris { background: transparent; color: #8a8070; border: 1px solid #d0c8c0; padding: 0.5rem 1rem; font-family: 'Bebas Neue', sans-serif; font-size: 0.9rem; letter-spacing: 1px; cursor: pointer; border-radius: 2px; }
+        .enviado-msg { color: #166534; background: #f0fdf4; border: 1px solid #86efac; border-radius: 3px; padding: 0.6rem 0.8rem; font-size: 0.85rem; text-align: center; }
         @media (max-width: 900px) {
-          .nav { padding: 0 1rem; justify-content: space-between; background: #f5f0eb; border-bottom-color: #e0d8d0; }
-          .nav-logo { color: #c4a520; }
+          .nav { padding: 0 1rem; justify-content: space-between; }
           .nav-links { display: none; }
           .nav-right { display: none; }
-          .hamburger { display: block; color: #1a1612; }
+          .hamburger { display: block; }
           .notif-btn-movil { display: flex !important; }
           .nav-centro-movil { display: flex !important; }
           .menu-movil { display: flex; flex-direction: column; background: #f5f0eb; border-bottom: 1px solid #e0d8d0; padding: 1rem; gap: 0.5rem; }
@@ -234,6 +241,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           .nav-link-movil.active { color: #c4a520; background: #ede8e0; }
           .menu-usuario { font-size: 0.8rem; color: #4a4038; padding: 0.5rem 1rem; border-top: 1px solid #e0d8d0; margin-top: 0.25rem; }
           .btn-salir-movil { background: transparent; border: 1px solid #e0d8d0; color: #4a4038; padding: 0.6rem 1rem; font-family: 'Bebas Neue', sans-serif; font-size: 0.85rem; letter-spacing: 1px; cursor: pointer; border-radius: 2px; text-align: left; }
+          .btn-contacto-movil { background: transparent; border: 1px solid #e0d8d0; color: #4a4038; padding: 0.6rem 1rem; font-family: 'Bebas Neue', sans-serif; font-size: 0.85rem; letter-spacing: 1px; cursor: pointer; border-radius: 2px; text-align: left; }
           .notif-panel { position: fixed !important; left: 1rem !important; right: 1rem !important; top: 56px !important; width: auto !important; background: #fff !important; border-color: #e0d8d0 !important; z-index: 200 !important; }
           .notif-header { color: #1a1612 !important; border-bottom-color: #e0d8d0 !important; }
           .notif-titulo { color: #1a1612 !important; }
@@ -242,6 +250,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           .notif-item { border-bottom-color: #e0d8d0 !important; }
           .notif-item.no-leida { border-left-color: #c4a520 !important; }
           .notif-vacia { color: #8a8070 !important; }
+          .overlay-contacto { align-items: flex-end !important; padding: 0 !important; }
+          .modal-contacto { border-radius: 12px 12px 0 0 !important; border-left: none !important; border-top: 3px solid #c4a520 !important; }
         }
       `}</style>
 
@@ -255,6 +265,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           ))}
         </div>
         <div className="nav-right">
+          <button className="btn-contacto" onClick={() => { setModalContacto(true); setContactoEnviado(false) }}>
+            ✉ CONTACTO
+          </button>
           <div style={{ position: 'relative' }}>
             <button id="notif-btn" className="notif-btn" onClick={() => setMostrarNotifs(!mostrarNotifs)}>
               🔔
@@ -290,11 +303,51 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             {e.label}
           </Link>
         ))}
+        <button className="btn-contacto-movil" onClick={() => { setMenuAbierto(false); setModalContacto(true); setContactoEnviado(false) }}>
+          ✉ CONTACTO
+        </button>
         <div className="menu-usuario">Hola, <strong>{nombre}</strong></div>
         <button className="btn-salir-movil" onClick={cerrarSesion}>CERRAR SESIÓN</button>
       </div>
 
       <main>{children}</main>
+
+      {/* MODAL CONTACTO */}
+      {modalContacto && (
+        <div className="overlay-contacto" onClick={() => setModalContacto(false)}>
+          <div className="modal-contacto" onClick={e => e.stopPropagation()}>
+            <h3>✉ CONTACTAR CON ADMINISTRACIÓN</h3>
+            <p>Tu mensaje llegará al administrador junto con tus datos de contacto.</p>
+            <div className="contacto-info">
+              <span>Nombre</span>{nombre}
+              <span style={{ marginTop: '0.3rem' }}>Chapa</span>{chapa}
+              <span style={{ marginTop: '0.3rem' }}>Email</span>{emailUsuario}
+            </div>
+            {contactoEnviado ? (
+              <div className="enviado-msg">✓ Mensaje enviado correctamente</div>
+            ) : (
+              <>
+                <textarea
+                  className="contacto-textarea"
+                  placeholder="Escribe tu mensaje aquí..."
+                  value={mensajeContacto}
+                  onChange={e => setMensajeContacto(e.target.value)}
+                />
+                <div className="modal-btns">
+                  <button
+                    className="btn-amarillo"
+                    disabled={enviandoContacto || !mensajeContacto.trim()}
+                    onClick={enviarContacto}
+                  >
+                    {enviandoContacto ? 'ENVIANDO...' : 'ENVIAR MENSAJE'}
+                  </button>
+                  <button className="btn-gris" onClick={() => setModalContacto(false)}>CANCELAR</button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </>
   )
 }

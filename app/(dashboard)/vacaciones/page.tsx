@@ -584,7 +584,7 @@ function VacacionesContent() {
               <div className="leyenda-item"><div className="leyenda-dot" style={{ background: '#f5c518', border: '1px solid #d4a500' }} />Periodo vacacional</div>
               <div className="leyenda-item"><div className="leyenda-dot" style={{ background: '#60a5fa' }} />Días ofrecidos</div>
               <div className="leyenda-item"><div className="leyenda-dot" style={{ background: '#f87171' }} />Días buscados</div>
-              <div className="leyenda-item"><div className="leyenda-dot" style={{ background: '#60a5fa', opacity: 0.35 }} />Ventana flexible</div>
+              
             </div>
           </div>
         </div>
@@ -656,10 +656,11 @@ function VacacionesContent() {
                         onClick={() => tieneInfo && !estaBloqueado && setModalDia({ fecha: fechaStr, solicitudes: solsDelDia })}>
                         <span className="dia-num">{dia}</span>
                         {tieneInfo && !estaBloqueado && (
-                          <div className="dia-barras">
-                            {ofrece.slice(0, 2).map((_, idx) => <div key={idx} className="dia-barra" style={{ background: '#60a5fa', opacity: ofrece[idx]?.esVentana ? 0.3 : 0.9 }} />)}
-                            {busca.slice(0, 2).map((_, idx) => <div key={idx} className="dia-barra" style={{ background: '#f87171', opacity: busca[idx]?.esVentana ? 0.3 : 0.75 }} />)}
-                          </div>
+  <div className="dia-barras">
+    {ofrece.length > 0 && <div className="dia-barra" style={{ background: '#60a5fa' }} />}
+    {busca.length > 0 && <div className="dia-barra" style={{ background: '#f87171' }} />}
+  </div>
+)}
                         )}
                       </div>
                     )

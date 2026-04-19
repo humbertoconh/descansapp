@@ -1,4 +1,4 @@
-export type Grupo = 'Capataces' | 'Clasificadores' | 'Manipuladores' | 'Desconocido'
+export type Grupo = 'Capataces' | 'Clasificadores' | 'G-A' | 'G-B' | 'G-C' | 'G-D' | 'G-DA' | 'G-DB' | 'G-E' | 'G-I' | 'SIN-F' | 'Desconocido'
 
 export interface Profile {
   id: string
@@ -29,7 +29,7 @@ export interface Descanso {
 export function getGrupoFromChapa(chapa: string): Grupo {
   if (chapa.startsWith('24')) return 'Capataces'
   if (chapa.startsWith('63')) return 'Clasificadores'
-  if (chapa.startsWith('71') || chapa.startsWith('72')) return 'Manipuladores'
+  if (chapa.startsWith('71') || chapa.startsWith('72')) return 'G-A'
   return 'Desconocido'
 }
 

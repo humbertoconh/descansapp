@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import type { Profile } from '@/lib/types'
+import { enviarEmail, templateNotificacion } from '@/lib/email'
 
 const GRUPO_COLOR: Record<string, string> = {
   'Capataces': '#3b82f6',
@@ -39,6 +40,11 @@ const ACCION_LABEL: Record<string, string> = {
   usuario_eliminado: 'Usuario eliminado',
 }
 
+const GRUPOS = [
+  'Capataces', 'Clasificadores',
+  'G-A', 'G-B', 'G-C', 'G-D', 'G-DA', 'G-DB', 'G-E', 'G-I', 'SIN-F'
+]
+
 type Auditoria = {
   id: string
   created_at: string
@@ -61,6 +67,9 @@ export default function AdminUsuariosPage() {
   const [confirmarEliminar, setConfirmarEliminar] = useState<Profile | null>(null)
   const [filtroAccion, setFiltroAccion] = useState('')
   const [filtroUsuario, setFiltroUsuario] = useState('')
+  const [modalCambioGrupo, setModalCambioGrupo] = useState<Profile | null>(null)
+  const [nuevoGrupo, setNuevoGrupo] = useState('')
+  const [cambiandoGrupo, setCambiandoGrupo] = useState(false)
 
   const fetchUsuarios = async () => {
     const { data } = await supabase.from('profiles').select('*').order('created_at', { ascending: false })
@@ -122,6 +131,48 @@ export default function AdminUsuariosPage() {
     setAccionando(null)
   }
 
+  const cambiarGrupo = async () => {
+    if (!modalCambioGrupo || !nuevoGrupo) return
+    setCambiandoGrupo(true)
+    try {
+      const { data: resultado } = await supabase.rpc('cambiar_grupo_usuario', {
+        p_user_id: modalCambioGrupo.id,
+        p_nuevo_grupo: nuevoGrupo,
+      })
+
+      // Email al usuario
+      const { data: emailData } = await supabase.rpc('get_user_email', { p_user_id: modalCambioGrupo.id })
+      if (emailData) {
+        const partes = []
+        if (resultado.solicitudes_canceladas > 0)
+          partes.push(`${resultado.solicitudes_canceladas} solicitud(es) de intercambio cancelada(s)`)
+        if (resultado.espera_eliminadas > 0)
+          partes.push(`${resultado.espera_eliminadas} entrada(s) en lista de espera eliminada(s)`)
+        if (resultado.sueltos_eliminados > 0)
+          partes.push(`${resultado.sueltos_eliminados} día(s) suelto(s) retirado(s)`)
+
+        const detalle = partes.length > 0
+          ? `Como consecuencia del cambio, se han cancelado automáticamente: ${partes.join(', ')}.`
+          : 'No tenías registros pendientes, por lo que no se ha cancelado nada.'
+
+        await enviarEmail(
+          emailData,
+          '📋 Cambio de grupo en DescansApp',
+          templateNotificacion(
+            'Tu grupo de descansos ha cambiado',
+            `Tu grupo ha sido cambiado de <strong>${resultado.grupo_anterior}</strong> a <strong>${resultado.grupo_nuevo}</strong> por un administrador.\n\n${detalle}\n\nA partir de ahora verás el calendario de tu nuevo grupo. Si tienes dudas, contacta con administración.`
+          )
+        )
+      }
+
+      await fetchUsuarios()
+      setModalCambioGrupo(null)
+      setNuevoGrupo('')
+    } finally {
+      setCambiandoGrupo(false)
+    }
+  }
+
   const auditoriaFiltrada = auditoria.filter(a => {
     const matchAccion = !filtroAccion || a.accion === filtroAccion
     const matchUsuario = !filtroUsuario || (a.user_nombre?.toLowerCase().includes(filtroUsuario.toLowerCase()) || a.user_chapa?.includes(filtroUsuario))
@@ -164,15 +215,20 @@ export default function AdminUsuariosPage() {
         .btn-eliminar { background: #e05050; color: #fff; border: none; padding: 0.4rem 0.9rem; font-family: 'Bebas Neue', sans-serif; font-size: 0.85rem; letter-spacing: 1px; cursor: pointer; border-radius: 2px; }
         .btn-eliminar:hover:not(:disabled) { background: #c03030; }
         .btn-admin { background: transparent; color: #6a6058; border: 1px solid #2a2420; padding: 0.4rem 0.9rem; font-family: 'Bebas Neue', sans-serif; font-size: 0.75rem; letter-spacing: 1px; cursor: pointer; border-radius: 2px; }
+        .btn-grupo { background: transparent; color: #60a5fa; border: 1px solid #1a3a5a; padding: 0.4rem 0.9rem; font-family: 'Bebas Neue', sans-serif; font-size: 0.75rem; letter-spacing: 1px; cursor: pointer; border-radius: 2px; }
+        .btn-grupo:hover:not(:disabled) { background: #1a3a5a; }
         button:disabled { opacity: 0.4; cursor: not-allowed; }
         .empty { text-align: center; padding: 4rem 2rem; color: #4a4038; }
         .empty .icono { font-size: 3rem; margin-bottom: 1rem; display: block; }
         .cargando { text-align: center; padding: 4rem; color: #6a6058; font-family: 'Bebas Neue', sans-serif; font-size: 1.2rem; letter-spacing: 2px; }
         .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); display: flex; align-items: center; justify-content: center; z-index: 100; padding: 1rem; }
-        .modal-confirmar { background: #1a1612; border: 1px solid #2a2420; border-left: 3px solid #e05050; padding: 2rem; width: 100%; max-width: 400px; border-radius: 4px; }
+        .modal-confirmar { background: #1a1612; border: 1px solid #2a2420; border-left: 3px solid #e05050; padding: 2rem; width: 100%; max-width: 420px; border-radius: 4px; }
         .modal-confirmar h3 { font-family: 'Bebas Neue', sans-serif; font-size: 1.4rem; letter-spacing: 2px; color: #e05050; margin-bottom: 0.75rem; }
         .modal-confirmar p { font-size: 0.85rem; color: #c8c0b4; line-height: 1.6; margin-bottom: 1.5rem; }
         .modal-confirmar strong { color: #f5c518; }
+        .modal-grupo { background: #1a1612; border: 1px solid #2a2420; border-left: 3px solid #60a5fa; padding: 2rem; width: 100%; max-width: 420px; border-radius: 4px; }
+        .modal-grupo h3 { font-family: 'Bebas Neue', sans-serif; font-size: 1.4rem; letter-spacing: 2px; color: #60a5fa; margin-bottom: 0.75rem; }
+        .modal-grupo strong { color: #f5c518; }
         .modal-btns { display: flex; gap: 0.75rem; }
         .filtros { display: flex; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
         .filtros input, .filtros select { background: #1a1612; border: 1px solid #2a2420; color: #e8e0d4; padding: 0.5rem 0.75rem; font-family: 'DM Sans', sans-serif; font-size: 0.85rem; border-radius: 2px; outline: none; }
@@ -182,7 +238,13 @@ export default function AdminUsuariosPage() {
         .desc-auditoria { font-size: 0.82rem; color: #c8c0b4; }
         .btn-refresh { background: transparent; border: 1px solid #2a2420; color: #6a6058; padding: 0.5rem 1rem; font-family: 'Bebas Neue', sans-serif; font-size: 0.85rem; letter-spacing: 1px; cursor: pointer; border-radius: 2px; }
         .btn-refresh:hover { color: #f5c518; border-color: #f5c518; }
+        .aviso-cambio { font-size: 0.8rem; color: #e05050; margin-bottom: 1rem; padding: 0.5rem 0.75rem; background: #2a1010; border-radius: 3px; line-height: 1.5; }
+        .select-grupo { background: #1a1612; border: 1px solid #2a2420; color: #e8e0d4; padding: 0.6rem 0.8rem; border-radius: 2px; width: 100%; font-family: 'DM Sans', sans-serif; font-size: 0.9rem; outline: none; }
+        .select-grupo:focus { border-color: #60a5fa; }
+        .select-grupo option { background: #1a1612; }
+        .field-label { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 1.5px; color: #6a6058; display: block; margin-bottom: 0.4rem; }
       `}</style>
+
       <div className="admin-page">
         <div className="admin-header">
           <div>
@@ -193,6 +255,7 @@ export default function AdminUsuariosPage() {
             <span className="badge-count">{pendientes.length} PENDIENTE{pendientes.length > 1 ? 'S' : ''}</span>
           )}
         </div>
+
         <div className="tabs">
           <button className={`tab-btn ${tab === 'pendientes' ? 'active' : ''}`} onClick={() => setTab('pendientes')}>
             PENDIENTES <span className={`tab-num ${tab === 'pendientes' && pendientes.length > 0 ? 'rojo' : ''}`}>{pendientes.length}</span>
@@ -307,9 +370,14 @@ export default function AdminUsuariosPage() {
                           </button>
                         )}
                         {tab === 'aprobados' && (
-                          <button className="btn-desactivar" disabled={accionando === u.id} onClick={() => desactivar(u.id)}>
-                            {accionando === u.id ? '...' : 'DESACTIVAR'}
-                          </button>
+                          <>
+                            <button className="btn-desactivar" disabled={accionando === u.id} onClick={() => desactivar(u.id)}>
+                              {accionando === u.id ? '...' : 'DESACTIVAR'}
+                            </button>
+                            <button className="btn-grupo" disabled={accionando === u.id} onClick={() => { setModalCambioGrupo(u); setNuevoGrupo(u.grupo) }}>
+                              CAMBIAR GRUPO
+                            </button>
+                          </>
                         )}
                         <button className="btn-admin" disabled={accionando === u.id} onClick={() => hacerAdmin(u.id, u.is_admin)}>
                           {u.is_admin ? 'QUITAR ADMIN' : 'HACER ADMIN'}
@@ -327,6 +395,7 @@ export default function AdminUsuariosPage() {
         )}
       </div>
 
+      {/* MODAL: Confirmar eliminar */}
       {confirmarEliminar && (
         <div className="overlay" onClick={() => setConfirmarEliminar(null)}>
           <div className="modal-confirmar" onClick={e => e.stopPropagation()}>
@@ -340,6 +409,46 @@ export default function AdminUsuariosPage() {
                 {accionando === confirmarEliminar.id ? 'ELIMINANDO...' : 'SÍ, ELIMINAR'}
               </button>
               <button className="btn-admin" onClick={() => setConfirmarEliminar(null)}>CANCELAR</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: Cambiar grupo */}
+      {modalCambioGrupo && (
+        <div className="overlay" onClick={() => { setModalCambioGrupo(null); setNuevoGrupo('') }}>
+          <div className="modal-grupo" onClick={e => e.stopPropagation()}>
+            <h3>📋 CAMBIAR GRUPO</h3>
+            <p style={{ fontSize: '0.85rem', color: '#c8c0b4', lineHeight: 1.6, marginBottom: '1rem' }}>
+              Usuario: <strong>{modalCambioGrupo.nombre} {modalCambioGrupo.apellidos}</strong> (chapa <strong>{modalCambioGrupo.chapa}</strong>)<br />
+              Grupo actual: <strong style={{ color: '#f5c518' }}>{modalCambioGrupo.grupo}</strong>
+            </p>
+            <div className="aviso-cambio">
+              ⚠️ Sus solicitudes abiertas, entradas en lista de espera y días sueltos disponibles serán cancelados automáticamente. Se le notificará por email.
+            </div>
+            <div style={{ marginBottom: '1.25rem' }}>
+              <label className="field-label">Nuevo grupo</label>
+              <select
+                className="select-grupo"
+                value={nuevoGrupo}
+                onChange={e => setNuevoGrupo(e.target.value)}
+              >
+                {GRUPOS.map(g => (
+                  <option key={g} value={g}>{g}</option>
+                ))}
+              </select>
+            </div>
+            <div className="modal-btns">
+              <button
+                className="btn-aprobar"
+                disabled={cambiandoGrupo || nuevoGrupo === modalCambioGrupo.grupo}
+                onClick={cambiarGrupo}
+              >
+                {cambiandoGrupo ? 'CAMBIANDO...' : 'CONFIRMAR CAMBIO'}
+              </button>
+              <button className="btn-admin" onClick={() => { setModalCambioGrupo(null); setNuevoGrupo('') }}>
+                CANCELAR
+              </button>
             </div>
           </div>
         </div>

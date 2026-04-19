@@ -101,9 +101,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   const noLeidas = notifs.filter(n => !n.leida).length
   const enlaces = [
-    { href: '/calendario', label: 'CALENDARIO' },
-    ...(isAdmin ? [{ href: '/admin/usuarios', label: 'USUARIOS' }] : []),
-  ]
+  { href: '/calendario', label: 'DESCANSOS' },
+  ...(isAdmin ? [{ href: '/vacaciones', label: 'VACACIONES' }] : []),
+  ...(isAdmin ? [{ href: '/admin/usuarios', label: 'USUARIOS' }] : []),
+]
 
   const PanelNotificaciones = () => (
     <div id="notif-panel" className="notif-panel" onTouchStart={e => e.stopPropagation()}>

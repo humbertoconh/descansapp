@@ -239,7 +239,7 @@ function VacacionesContent() {
         .btn-nueva:hover { background: #ffd740; }
         .meses-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.5rem; }
         .mes { border: 1px solid #e0d8d0; border-radius: 4px; padding: 1rem; position: relative; }
-        .mes.vacacional { background: #fffbf0; border-color: #f5c518; }
+        .mes.vacacional { background: #fff; border-color: #f5c518; }
         .mes.normal { background: #fff; }
         .mes-titulo { font-family: 'Bebas Neue', sans-serif; font-size: 1.1rem; letter-spacing: 2px; color: #c4a520; margin-bottom: 0.75rem; text-align: center; }
         .mes.vacacional .mes-titulo { color: #b8920a; }
@@ -252,7 +252,7 @@ function VacacionesContent() {
         .dia.vacio { cursor: default; pointer-events: none; background: transparent; border: none; }
         .dia.hoy { border-color: #f5c518 !important; }
         .dia.bloqueado { background: #e8e4e0 !important; color: #b8b0a8 !important; cursor: default; pointer-events: none; }
-        .dia.vacacional-bg { background: #fdf8e8; }
+        .dia.vacacional-bg { background: #f0ebe5; }
         .dia-num { font-size: 0.7rem; line-height: 1; position: relative; z-index: 2; }
         .dia-barras { position: absolute; bottom: 0; left: 0; right: 0; display: flex; flex-direction: column; gap: 1px; }
         .dia-barra { height: 4px; width: 100%; opacity: 0.85; }

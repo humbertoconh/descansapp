@@ -55,14 +55,15 @@ const validarRango = (desde: string, hasta: string): string => {
   return ''
 }
 
-// ─── SELECTOR DE FECHA CON POSICIÓN FIXED ───────────────────────────────────
-function DatePicker({ value, onChange, label, mesInicial, minDate, maxDate }: {
+// ─── SELECTOR DE FECHA ───────────────────────────────────────────────────────
+function DatePicker({ value, onChange, label, mesInicial, minDate, maxDate, abreHacia = 'arriba' }: {
   value: string
   onChange: (v: string) => void
   label: string
   mesInicial?: Date
   minDate?: Date
   maxDate?: Date
+  abreHacia?: 'arriba' | 'abajo'
 }) {
   const [abierto, setAbierto] = useState(false)
   const [rect, setRect] = useState<DOMRect | null>(null)
@@ -113,13 +114,15 @@ function DatePicker({ value, onChange, label, mesInicial, minDate, maxDate }: {
     position: 'fixed',
     left: rect.left,
     width: rect.width,
-    bottom: window.innerHeight - rect.top + 4,
     zIndex: 9999,
     background: '#fff',
     border: '1px solid #e0d8d0',
     borderRadius: '4px',
-    boxShadow: '0 -4px 24px rgba(0,0,0,0.15)',
+    boxShadow: '0 4px 24px rgba(0,0,0,0.15)',
     padding: '0.75rem',
+    ...(abreHacia === 'abajo'
+      ? { top: rect.bottom + 4 }
+      : { bottom: window.innerHeight - rect.top + 4 })
   } : { display: 'none' }
 
   return (
@@ -274,7 +277,6 @@ function VacacionesContent() {
     return 'flexible-flexible'
   }
 
-  // Número de días efectivo para cada lado del formulario
   const numDiasOfrecido = ofrecidoFlexible
     ? (!buscadoFlexible && buscadoDesde && buscadoHasta ? diasEntre(buscadoDesde, buscadoHasta) : ofrecidoNumDias)
     : (ofrecidoDesde && ofrecidoHasta ? diasEntre(ofrecidoDesde, ofrecidoHasta) : 0)
@@ -303,9 +305,8 @@ function VacacionesContent() {
       if (!buscadoVentanaDesde || !buscadoVentanaHasta) return 'Indica la ventana de fechas que buscas'
       if (diasEntre(buscadoVentanaDesde, buscadoVentanaHasta) < numDiasBuscado) return `La ventana debe tener al menos ${numDiasBuscado} días`
     }
-    if (numDiasOfrecido > 0 && numDiasBuscado > 0 && numDiasOfrecido !== numDiasBuscado) {
+    if (numDiasOfrecido > 0 && numDiasBuscado > 0 && numDiasOfrecido !== numDiasBuscado)
       return `Los días ofrecidos (${numDiasOfrecido}) y buscados (${numDiasBuscado}) deben ser la misma cantidad`
-    }
     return ''
   }
 
@@ -316,7 +317,7 @@ function VacacionesContent() {
     if (caso === 'exacto-flexible' || caso === 'flexible-exacto') {
       if (!aceptDesde || !aceptHasta) return 'Indica las fechas que ofreces'
       if (aceptDesde > aceptHasta) return 'La fecha inicio debe ser anterior a la de fin'
-      if (parseISO(aceptDesde) <= limite7dias) return 'Los días deben ser con más de 7 días de antelación'
+      if (parseISO(aceptDesde) < limite7dias) return 'Los días deben ser con más de 7 días de antelación'
       const err = validarRango(aceptDesde, aceptHasta)
       if (err) return err
       const ventDesde = caso === 'exacto-flexible' ? modalAceptar.buscado_ventana_desde : modalAceptar.ofrecido_ventana_desde
@@ -409,29 +410,21 @@ function VacacionesContent() {
       ofDesde = modalAceptar.buscado_desde
       ofHasta = modalAceptar.buscado_hasta
     } else if (caso === 'exacto-flexible' || caso === 'flexible-exacto') {
-      ofDesde = aceptDesde
-      ofHasta = aceptHasta
+      ofDesde = aceptDesde; ofHasta = aceptHasta
       numD = diasEntre(aceptDesde, aceptHasta)
     } else {
-      ofVentDesde = aceptVentanaDesde
-      ofVentHasta = aceptVentanaHasta
-      numD = aceptNumDias
-      esFlexible = true
+      ofVentDesde = aceptVentanaDesde; ofVentHasta = aceptVentanaHasta
+      numD = aceptNumDias; esFlexible = true
     }
 
     await supabase.rpc('aceptar_vacacion', {
-      p_solicitud_id: modalAceptar.id,
-      p_aceptante_id: miId,
-      p_ofrecido_desde: ofDesde,
-      p_ofrecido_hasta: ofHasta,
-      p_ofrecido_ventana_desde: ofVentDesde,
-      p_ofrecido_ventana_hasta: ofVentHasta,
-      p_num_dias: numD,
-      p_flexible: esFlexible,
+      p_solicitud_id: modalAceptar.id, p_aceptante_id: miId,
+      p_ofrecido_desde: ofDesde, p_ofrecido_hasta: ofHasta,
+      p_ofrecido_ventana_desde: ofVentDesde, p_ofrecido_ventana_hasta: ofVentHasta,
+      p_num_dias: numD, p_flexible: esFlexible,
     })
 
     const { data: miPerfil } = await supabase.from('profiles').select('nombre, apellidos, chapa').eq('id', miId).single()
-
     if (miPerfil) {
       const loDaA = descripcionLado(modalAceptar, 'ofrecido')
       const loRecibeA = esFlexible
@@ -439,8 +432,7 @@ function VacacionesContent() {
         : `${fmt(ofDesde || '')} → ${fmt(ofHasta || '')}`
 
       await supabase.from('notificaciones').insert({
-        user_id: modalAceptar.user_id,
-        tipo: 'aceptacion',
+        user_id: modalAceptar.user_id, tipo: 'aceptacion',
         titulo: '🏖️ Alguien acepta tu intercambio de vacaciones',
         mensaje: `${miPerfil.nombre} ${miPerfil.apellidos} (chapa ${miPerfil.chapa}) acepta tu intercambio. Tú das: ${loDaA}. Tú recibes: ${loRecibeA}. Entra en Vacaciones para confirmarlo.`,
         leida: false,
@@ -448,8 +440,7 @@ function VacacionesContent() {
 
       const { data: emailA } = await supabase.rpc('get_user_email', { p_user_id: modalAceptar.user_id })
       if (emailA) {
-        await enviarEmail(emailA,
-          '✅ Alguien acepta tu intercambio de vacaciones - DescansApp',
+        await enviarEmail(emailA, '✅ Alguien acepta tu intercambio de vacaciones - DescansApp',
           templateNotificacion('¡Alguien acepta tu intercambio!',
             `<strong>${miPerfil.nombre} ${miPerfil.apellidos}</strong> (chapa ${miPerfil.chapa}) acepta el intercambio contigo.<br><br>
             Tú das: <strong>${loDaA}</strong><br>
@@ -459,40 +450,30 @@ function VacacionesContent() {
     }
 
     await cargar()
-    setModalAceptar(null)
-    setModalDetalle(null)
-    resetAceptar()
-    setAceptando(false)
+    setModalAceptar(null); setModalDetalle(null); resetAceptar(); setAceptando(false)
   }
 
   const confirmarIntercambio = async (solicitudId: string) => {
     setConfirmando(solicitudId)
     await supabase.from('vacaciones_solicitudes').update({ estado: 'confirmada' }).eq('id', solicitudId)
-
     const acept = aceptaciones.find(a => a.solicitud_id === solicitudId)
     const sol = solicitudes.find(s => s.id === solicitudId)
-
     if (acept && sol) {
       const { data: perfilA } = await supabase.from('profiles').select('nombre, apellidos, chapa').eq('id', miId).single()
       const { data: emailB } = await supabase.rpc('get_user_email', { p_user_id: acept.aceptante_id })
-
       if (perfilA) {
         const loDaB = descripcionLado(sol, 'ofrecido')
         const loRecibeB = acept.flexible
           ? `${acept.num_dias} días entre el ${fmt(acept.ofrecido_ventana_desde)} y el ${fmt(acept.ofrecido_ventana_hasta)}`
           : `${fmt(acept.ofrecido_desde)} → ${fmt(acept.ofrecido_hasta)}`
-
         await supabase.from('notificaciones').insert({
-          user_id: acept.aceptante_id,
-          tipo: 'completado',
+          user_id: acept.aceptante_id, tipo: 'completado',
           titulo: '✅ Intercambio de vacaciones confirmado',
           mensaje: `${perfilA.nombre} ${perfilA.apellidos} (chapa ${perfilA.chapa}) ha confirmado el intercambio. Tú das: ${loRecibeB}. Tú recibes: ${loDaB}. Recuerda tramitarlo con el Dpto. de Asignación de Personal.`,
           leida: false,
         })
-
         if (emailB) {
-          await enviarEmail(emailB,
-            '✅ Intercambio de vacaciones confirmado - DescansApp',
+          await enviarEmail(emailB, '✅ Intercambio de vacaciones confirmado - DescansApp',
             templateNotificacion('¡Intercambio de vacaciones confirmado!',
               `<strong>${perfilA.nombre} ${perfilA.apellidos}</strong> (chapa ${perfilA.chapa}) ha confirmado el intercambio contigo.<br><br>
               Tú das: <strong>${loRecibeB}</strong><br>
@@ -501,9 +482,7 @@ function VacacionesContent() {
         }
       }
     }
-
-    await cargar()
-    setConfirmando(null)
+    await cargar(); setConfirmando(null)
   }
 
   const renderLado = (flexible: boolean, desde: string, hasta: string, numDias: number, ventDesde: string, ventHasta: string) => {
@@ -527,7 +506,7 @@ function VacacionesContent() {
     </div>
   }
 
-  const InfoDiasAutomatico = ({ dias, texto }: { dias: number, texto: string }) => (
+  const InfoDiasAuto = ({ dias, texto }: { dias: number, texto: string }) => (
     <div style={{ fontSize: '0.78rem', color: '#166534', background: '#f0fdf4', border: '1px solid #86efac', borderRadius: '3px', padding: '0.4rem 0.6rem', marginBottom: '0.5rem' }}>
       {texto} <strong>{dias} días</strong> (igual que el otro lado)
     </div>
@@ -678,9 +657,7 @@ function VacacionesContent() {
                   )}
                 </div>
                 <div className="mis-sol-acciones">
-                  {s.estado === 'esperando_confirmacion' && (
-                    <span className="estado-pill" style={{ background: '#fef3c7', color: '#92400e' }}>ESPERANDO</span>
-                  )}
+                  {s.estado === 'esperando_confirmacion' && <span className="estado-pill" style={{ background: '#fef3c7', color: '#92400e' }}>ESPERANDO</span>}
                   {s.estado === 'esperando_confirmacion' && acept && (
                     <button className="btn-confirmar-sol" disabled={confirmando === s.id} onClick={() => confirmarIntercambio(s.id)}>
                       {confirmando === s.id ? '...' : '✓ CONFIRMAR'}
@@ -834,12 +811,10 @@ function VacacionesContent() {
           : caso === 'flexible-exacto'
           ? diasEntre(modalAceptar.buscado_desde, modalAceptar.buscado_hasta)
           : modalAceptar.num_dias
-
         return (
           <div className="overlay" onClick={() => { setModalAceptar(null); resetAceptar() }}>
             <div className="modal" onClick={e => e.stopPropagation()}>
               <h3>{caso === 'exacto-exacto' ? 'ACEPTAR INTERCAMBIO' : 'PROPONER INTERCAMBIO'}</h3>
-
               {caso === 'exacto-exacto' && (
                 <>
                   <p style={{ fontSize: '0.82rem', color: '#8a8070', marginBottom: '1rem' }}>
@@ -852,7 +827,6 @@ function VacacionesContent() {
                   </div>
                 </>
               )}
-
               {(caso === 'exacto-flexible' || caso === 'flexible-exacto') && (
                 <>
                   <p style={{ fontSize: '0.82rem', color: '#8a8070', marginBottom: '0.75rem' }}>
@@ -873,13 +847,14 @@ function VacacionesContent() {
                         : `${fmt(modalAceptar.ofrecido_ventana_desde)} — ${fmt(modalAceptar.ofrecido_ventana_hasta)}`}
                     </strong>
                   </div>
-                  <DatePicker label="Desde" value={aceptDesde}
+                  {/* Aceptar: abrir abajo el Desde, arriba el Hasta */}
+                  <DatePicker label="Desde" value={aceptDesde} abreHacia="abajo"
                     onChange={v => { setAceptDesde(v); if (aceptHasta && v > aceptHasta) setAceptHasta('') }}
                     minDate={caso === 'exacto-flexible' ? new Date(modalAceptar.buscado_ventana_desde + 'T00:00:00') : new Date(modalAceptar.ofrecido_ventana_desde + 'T00:00:00')}
                     maxDate={caso === 'exacto-flexible' ? new Date(modalAceptar.buscado_ventana_hasta + 'T00:00:00') : new Date(modalAceptar.ofrecido_ventana_hasta + 'T00:00:00')}
                   />
-                  <DatePicker label="Hasta" value={aceptHasta} onChange={setAceptHasta}
-                    mesInicial={mesDesdeAcept}
+                  <DatePicker label="Hasta" value={aceptHasta} abreHacia="arriba"
+                    onChange={setAceptHasta} mesInicial={mesDesdeAcept}
                     minDate={aceptDesde ? parseISO(aceptDesde) : limite7dias}
                     maxDate={caso === 'exacto-flexible' ? new Date(modalAceptar.buscado_ventana_hasta + 'T00:00:00') : new Date(modalAceptar.ofrecido_ventana_hasta + 'T00:00:00')}
                   />
@@ -891,7 +866,6 @@ function VacacionesContent() {
                   )}
                 </>
               )}
-
               {caso === 'flexible-flexible' && (
                 <>
                   <p style={{ fontSize: '0.82rem', color: '#8a8070', marginBottom: '0.75rem' }}>
@@ -904,12 +878,11 @@ function VacacionesContent() {
                     <label>Número de días que ofreces / buscas</label>
                     <input type="number" min={1} max={30} value={aceptNumDias} onChange={e => setAceptNumDias(Number(e.target.value))} />
                   </div>
-                  <DatePicker label="Tu ventana desde" value={aceptVentanaDesde} onChange={setAceptVentanaDesde} minDate={limite7dias} />
-                  <DatePicker label="Tu ventana hasta" value={aceptVentanaHasta} onChange={setAceptVentanaHasta} mesInicial={mesDesdeVentanaAcept} minDate={aceptVentanaDesde ? parseISO(aceptVentanaDesde) : limite7dias} />
+                  <DatePicker label="Tu ventana desde" value={aceptVentanaDesde} abreHacia="abajo" onChange={setAceptVentanaDesde} minDate={limite7dias} />
+                  <DatePicker label="Tu ventana hasta" value={aceptVentanaHasta} abreHacia="arriba" onChange={setAceptVentanaHasta} mesInicial={mesDesdeVentanaAcept} minDate={aceptVentanaDesde ? parseISO(aceptVentanaDesde) : limite7dias} />
                   {aceptVentanaDesde && aceptVentanaHasta && <div className="ventana-aviso">💡 El otro elegirá {aceptNumDias} días dentro de tu ventana</div>}
                 </>
               )}
-
               <div className="modal-btns">
                 <button className={caso === 'exacto-exacto' ? 'btn-verde' : 'btn-amarillo'} disabled={aceptando} onClick={aceptarIntercambio}>
                   {aceptando ? 'PROCESANDO...' : caso === 'exacto-exacto' ? '✓ CONFIRMAR INTERCAMBIO' : 'ENVIAR PROPUESTA'}
@@ -930,67 +903,49 @@ function VacacionesContent() {
               Indica qué días ofreces y qué días buscas. Mínimo 7 días de antelación.
             </p>
 
-            {/* LO QUE OFRECES */}
+            {/* LO QUE OFRECES — calendarios abren hacia abajo */}
             <div className="bloque-lado">
               <div className="bloque-lado-titulo">📤 LO QUE OFRECES</div>
-              <label className="toggle-flexible">
-                <input type="checkbox" checked={ofrecidoFlexible} onChange={e => setOfrecidoFlexible(e.target.checked)} />
-                Flexible (indico una ventana de fechas)
-              </label>
+              <label className="toggle-flexible"><input type="checkbox" checked={ofrecidoFlexible} onChange={e => setOfrecidoFlexible(e.target.checked)} />Flexible (indico una ventana de fechas)</label>
               {ofrecidoFlexible ? (
                 <>
-                  {/* Solo pedir num días si el buscado también es flexible */}
-                  {buscadoFlexible ? (
-                    <div className="field">
-                      <label>Número de días que ofreces</label>
-                      <input type="number" min={1} max={30} value={ofrecidoNumDias} onChange={e => setOfrecidoNumDias(Number(e.target.value))} />
-                    </div>
-                  ) : buscadoDesde && buscadoHasta ? (
-                    <InfoDiasAutomatico dias={diasEntre(buscadoDesde, buscadoHasta)} texto="Ofrecerás" />
-                  ) : null}
-                  <DatePicker label="Ventana desde" value={ofrecidoVentanaDesde} onChange={setOfrecidoVentanaDesde} minDate={limite7dias} />
-                  <DatePicker label="Ventana hasta" value={ofrecidoVentanaHasta} onChange={setOfrecidoVentanaHasta} mesInicial={mesDesdeVentanaOfrecido} minDate={ofrecidoVentanaDesde ? parseISO(ofrecidoVentanaDesde) : limite7dias} />
-                  {ofrecidoVentanaDesde && ofrecidoVentanaHasta && ofrecidoVentanaDesde <= ofrecidoVentanaHasta && (
-                    <div className="ventana-aviso">💡 {numDiasOfrecido} días a elegir dentro de esa ventana</div>
-                  )}
+                  {buscadoFlexible
+                    ? <div className="field"><label>Número de días que ofreces</label><input type="number" min={1} max={30} value={ofrecidoNumDias} onChange={e => setOfrecidoNumDias(Number(e.target.value))} /></div>
+                    : buscadoDesde && buscadoHasta
+                    ? <InfoDiasAuto dias={diasEntre(buscadoDesde, buscadoHasta)} texto="Ofrecerás" />
+                    : null}
+                  <DatePicker label="Ventana desde" value={ofrecidoVentanaDesde} abreHacia="abajo" onChange={setOfrecidoVentanaDesde} minDate={limite7dias} />
+                  <DatePicker label="Ventana hasta" value={ofrecidoVentanaHasta} abreHacia="abajo" onChange={setOfrecidoVentanaHasta} mesInicial={mesDesdeVentanaOfrecido} minDate={ofrecidoVentanaDesde ? parseISO(ofrecidoVentanaDesde) : limite7dias} />
+                  {ofrecidoVentanaDesde && ofrecidoVentanaHasta && ofrecidoVentanaDesde <= ofrecidoVentanaHasta && <div className="ventana-aviso">💡 {numDiasOfrecido} días a elegir dentro de esa ventana</div>}
                 </>
               ) : (
                 <>
-                  <DatePicker label="Desde" value={ofrecidoDesde} onChange={v => { setOfrecidoDesde(v); if (ofrecidoHasta && v > ofrecidoHasta) setOfrecidoHasta('') }} minDate={limite7dias} />
-                  <DatePicker label="Hasta" value={ofrecidoHasta} onChange={setOfrecidoHasta} mesInicial={mesDesdeOfrecido} minDate={ofrecidoDesde ? parseISO(ofrecidoDesde) : limite7dias} />
+                  <DatePicker label="Desde" value={ofrecidoDesde} abreHacia="abajo" onChange={v => { setOfrecidoDesde(v); if (ofrecidoHasta && v > ofrecidoHasta) setOfrecidoHasta('') }} minDate={limite7dias} />
+                  <DatePicker label="Hasta" value={ofrecidoHasta} abreHacia="abajo" onChange={setOfrecidoHasta} mesInicial={mesDesdeOfrecido} minDate={ofrecidoDesde ? parseISO(ofrecidoDesde) : limite7dias} />
                   <Aviso desde={ofrecidoDesde} hasta={ofrecidoHasta} />
                 </>
               )}
             </div>
 
-            {/* LO QUE BUSCAS */}
+            {/* LO QUE BUSCAS — calendarios abren hacia arriba */}
             <div className="bloque-lado">
               <div className="bloque-lado-titulo">📥 LO QUE BUSCAS</div>
-              <label className="toggle-flexible">
-                <input type="checkbox" checked={buscadoFlexible} onChange={e => setBuscadoFlexible(e.target.checked)} />
-                Flexible (indico una ventana de fechas)
-              </label>
+              <label className="toggle-flexible"><input type="checkbox" checked={buscadoFlexible} onChange={e => setBuscadoFlexible(e.target.checked)} />Flexible (indico una ventana de fechas)</label>
               {buscadoFlexible ? (
                 <>
-                  {/* Solo pedir num días si el ofrecido también es flexible */}
-                  {ofrecidoFlexible ? (
-                    <div className="field">
-                      <label>Número de días que buscas</label>
-                      <input type="number" min={1} max={30} value={buscadoNumDias} onChange={e => setBuscadoNumDias(Number(e.target.value))} />
-                    </div>
-                  ) : ofrecidoDesde && ofrecidoHasta ? (
-                    <InfoDiasAutomatico dias={diasEntre(ofrecidoDesde, ofrecidoHasta)} texto="Buscarás" />
-                  ) : null}
-                  <DatePicker label="Ventana desde" value={buscadoVentanaDesde} onChange={setBuscadoVentanaDesde} minDate={limite7dias} />
-                  <DatePicker label="Ventana hasta" value={buscadoVentanaHasta} onChange={setBuscadoVentanaHasta} mesInicial={mesDesdeVentanaBuscado} minDate={buscadoVentanaDesde ? parseISO(buscadoVentanaDesde) : limite7dias} />
-                  {buscadoVentanaDesde && buscadoVentanaHasta && buscadoVentanaDesde <= buscadoVentanaHasta && (
-                    <div className="ventana-aviso">💡 {numDiasBuscado} días a elegir dentro de esa ventana</div>
-                  )}
+                  {ofrecidoFlexible
+                    ? <div className="field"><label>Número de días que buscas</label><input type="number" min={1} max={30} value={buscadoNumDias} onChange={e => setBuscadoNumDias(Number(e.target.value))} /></div>
+                    : ofrecidoDesde && ofrecidoHasta
+                    ? <InfoDiasAuto dias={diasEntre(ofrecidoDesde, ofrecidoHasta)} texto="Buscarás" />
+                    : null}
+                  <DatePicker label="Ventana desde" value={buscadoVentanaDesde} abreHacia="arriba" onChange={setBuscadoVentanaDesde} minDate={limite7dias} />
+                  <DatePicker label="Ventana hasta" value={buscadoVentanaHasta} abreHacia="arriba" onChange={setBuscadoVentanaHasta} mesInicial={mesDesdeVentanaBuscado} minDate={buscadoVentanaDesde ? parseISO(buscadoVentanaDesde) : limite7dias} />
+                  {buscadoVentanaDesde && buscadoVentanaHasta && buscadoVentanaDesde <= buscadoVentanaHasta && <div className="ventana-aviso">💡 {numDiasBuscado} días a elegir dentro de esa ventana</div>}
                 </>
               ) : (
                 <>
-                  <DatePicker label="Desde" value={buscadoDesde} onChange={v => { setBuscadoDesde(v); if (buscadoHasta && v > buscadoHasta) setBuscadoHasta('') }} minDate={limite7dias} />
-                  <DatePicker label="Hasta" value={buscadoHasta} onChange={setBuscadoHasta} mesInicial={mesDesdeBuscado} minDate={buscadoDesde ? parseISO(buscadoDesde) : limite7dias} />
+                  <DatePicker label="Desde" value={buscadoDesde} abreHacia="arriba" onChange={v => { setBuscadoDesde(v); if (buscadoHasta && v > buscadoHasta) setBuscadoHasta('') }} minDate={limite7dias} />
+                  <DatePicker label="Hasta" value={buscadoHasta} abreHacia="arriba" onChange={setBuscadoHasta} mesInicial={mesDesdeBuscado} minDate={buscadoDesde ? parseISO(buscadoDesde) : limite7dias} />
                   <Aviso desde={buscadoDesde} hasta={buscadoHasta} />
                 </>
               )}

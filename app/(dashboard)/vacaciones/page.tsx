@@ -661,7 +661,6 @@ function VacacionesContent() {
     {busca.length > 0 && <div className="dia-barra" style={{ background: '#f87171' }} />}
   </div>
 )}
-                        )}
                       </div>
                     )
                   })}

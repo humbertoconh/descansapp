@@ -18,6 +18,7 @@ export default function RegistroPage() {
     nombre: '', apellidos: '', chapa: '', email: '', telefono: '', password: '', confirmar: '',
   })
   const [grupoManipulador, setGrupoManipulador] = useState('')
+  const [aceptaPrivacidad, setAceptaPrivacidad] = useState(false)
 
   const esManipulador = form.chapa.length === 5 && (form.chapa.startsWith('71') || form.chapa.startsWith('72'))
 

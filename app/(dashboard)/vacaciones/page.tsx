@@ -432,21 +432,33 @@ function VacacionesContent() {
     await cargar(); setModalAceptar(null); setModalDetalle(null); resetAceptar(); setAceptando(false)
   }
 
+  const waBtn = (tel: string, nombre: string) =>
+    `<a href="https://wa.me/34${tel.replace(/\s/g,'')}" style="display:inline-flex;align-items:center;gap:6px;background:#25D366;color:#fff;padding:8px 16px;border-radius:6px;text-decoration:none;font-weight:600;font-size:14px;margin:8px 0">
+      <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" width="18" height="18" style="vertical-align:middle"/> Contactar con ${nombre}
+    </a>`
+
   const confirmarIntercambio = async (solicitudId: string) => {
     setConfirmando(solicitudId)
     await supabase.from('vacaciones_solicitudes').update({ estado: 'confirmada' }).eq('id', solicitudId)
     const acept = aceptaciones.find(a => a.solicitud_id === solicitudId)
     const sol = solicitudes.find(s => s.id === solicitudId)
     if (acept && sol) {
-      const { data: perfilA } = await supabase.from('profiles').select('nombre, apellidos, chapa').eq('id', miId).single()
+      const { data: perfilA } = await supabase.from('profiles').select('nombre, apellidos, chapa, telefono').eq('id', miId).single()
+      const { data: perfilB } = await supabase.from('profiles').select('nombre, apellidos, chapa, telefono').eq('id', acept.aceptante_id).single()
       const { data: emailB } = await supabase.rpc('get_user_email', { p_user_id: acept.aceptante_id })
+      const { data: emailA } = await supabase.rpc('get_user_email', { p_user_id: miId })
       if (perfilA) {
         const loDaB = descripcionLado(sol, 'ofrecido')
         const loRecibeB = acept.flexible ? `${acept.num_dias} días entre el ${fmt(acept.ofrecido_ventana_desde)} y el ${fmt(acept.ofrecido_ventana_hasta)}` : `${fmt(acept.ofrecido_desde)} → ${fmt(acept.ofrecido_hasta)}`
+        const waBtnA = perfilA.telefono ? `<br><br>${waBtn(perfilA.telefono, `${perfilA.nombre} ${perfilA.apellidos}`)}` : ''
+        const waBtnB = perfilB?.telefono ? `<br><br>${waBtn(perfilB.telefono, `${perfilB.nombre} ${perfilB.apellidos}`)}` : ''
         await supabase.from('notificaciones').insert({ user_id: acept.aceptante_id, tipo: 'completado', titulo: '✅ Intercambio de vacaciones confirmado', mensaje: `${perfilA.nombre} ${perfilA.apellidos} ha confirmado el intercambio. Tú das: ${loRecibeB}. Tú recibes: ${loDaB}. Recuerda tramitarlo con el Dpto. de Asignación de Personal.`, leida: false })
         if (emailB) await enviarEmail(emailB, '✅ Intercambio de vacaciones confirmado - DescansApp',
           templateNotificacion('¡Intercambio de vacaciones confirmado!',
-            `<strong>${perfilA.nombre} ${perfilA.apellidos}</strong> (chapa ${perfilA.chapa}) ha confirmado el intercambio contigo.<br><br>Tú das: <strong>${loRecibeB}</strong><br>Tú recibes: <strong>${loDaB}</strong><br><br>Recuerda tramitar el cambio con el Departamento de Asignación de Personal.`))
+            `<strong>${perfilA.nombre} ${perfilA.apellidos}</strong> (chapa ${perfilA.chapa}) ha confirmado el intercambio contigo.<br><br>Tú das: <strong>${loRecibeB}</strong><br>Tú recibes: <strong>${loDaB}</strong><br><br>Recuerda tramitar el cambio con el Departamento de Asignación de Personal.${waBtnA}`))
+        if (emailA) await enviarEmail(emailA, '✅ Intercambio de vacaciones confirmado - DescansApp',
+          templateNotificacion('¡Intercambio de vacaciones confirmado!',
+            `Has confirmado el intercambio con <strong>${perfilB?.nombre} ${perfilB?.apellidos}</strong> (chapa ${perfilB?.chapa}).<br><br>Tú das: <strong>${loDaB}</strong><br>Tú recibes: <strong>${loRecibeB}</strong><br><br>Recuerda tramitar el cambio con el Departamento de Asignación de Personal.${waBtnB}`))
       }
     }
     await cargar(); setConfirmando(null)
@@ -455,16 +467,30 @@ function VacacionesContent() {
   const confirmarCadena = async (cadenaId: string, cadena: any) => {
     setConfirmandoCadena(cadenaId)
     await supabase.rpc('confirmar_cadena_vacaciones', { p_cadena_id: cadenaId, p_user_id: miId })
-    // Recargar para ver si ya confirmaron todos
     const { data: cadenaActualizada } = await supabase.from('vacaciones_cadenas').select('*').eq('id', cadenaId).single()
     if (cadenaActualizada?.estado === 'confirmada') {
-      // Notificar a todos que la cadena está cerrada
-      const participantes = [cadena.usuario1_id, cadena.usuario2_id, cadena.usuario3_id, cadena.usuario4_id].filter(Boolean)
-      for (const uid of participantes) {
+      const uids = [cadena.usuario1_id, cadena.usuario2_id, cadena.usuario3_id, cadena.usuario4_id].filter(Boolean)
+      // Obtener perfiles con teléfono de todos los participantes
+      const { data: perfiles } = await supabase.from('profiles').select('id, nombre, apellidos, chapa, telefono').in('id', uids)
+      const perfilesMap: Record<string, any> = {}
+      ;(perfiles || []).forEach((p: any) => { perfilesMap[p.id] = p })
+      for (const uid of uids) {
         await supabase.from('notificaciones').insert({ user_id: uid, tipo: 'completado', titulo: '✅ Cadena de vacaciones confirmada', mensaje: `Todos los participantes han confirmado. Recuerda tramitar el cambio con el Departamento de Asignación de Personal.`, leida: false })
         const { data: emailP } = await supabase.rpc('get_user_email', { p_user_id: uid })
-        if (emailP) await enviarEmail(emailP, '✅ Cadena de vacaciones confirmada - DescansApp',
-          templateNotificacion('¡Cadena de vacaciones confirmada!', `Todos los participantes han confirmado el intercambio en cadena. Recuerda tramitar el cambio con el Departamento de Asignación de Personal.`))
+        if (!emailP) continue
+        // Botones WhatsApp de los otros participantes
+        const otrosWa = uids
+          .filter(oId => oId !== uid)
+          .map(oId => {
+            const p = perfilesMap[oId]
+            return p?.telefono ? waBtn(p.telefono, `${p.nombre} ${p.apellidos}`) : ''
+          })
+          .filter(Boolean)
+          .join('')
+        const waSeccion = otrosWa ? `<br><br>Contacta con tus compañeros por WhatsApp:<br>${otrosWa}` : ''
+        await enviarEmail(emailP, '✅ Cadena de vacaciones confirmada - DescansApp',
+          templateNotificacion('¡Cadena de vacaciones confirmada!',
+            `Todos los participantes han confirmado el intercambio en cadena.<br><br>Recuerda tramitar el cambio con el Departamento de Asignación de Personal.${waSeccion}`))
       }
     }
     await cargar(); setConfirmandoCadena(null)

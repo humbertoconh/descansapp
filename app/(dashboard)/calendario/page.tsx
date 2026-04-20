@@ -210,6 +210,11 @@ function CalendarioContent() {
     setModalAceptar(null)
   }
 
+const waBtn = (tel: string, nombre: string) =>
+    `<a href="https://wa.me/34${tel.replace(/\s/g,'')}" style="display:inline-flex;align-items:center;gap:6px;background:#25D366;color:#fff;padding:8px 16px;border-radius:6px;text-decoration:none;font-weight:600;font-size:14px;margin:4px 0">
+      <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" width="18" height="18" style="vertical-align:middle"/> Contactar con ${nombre}
+    </a>`
+
 const confirmarIntercambio = async (solicitudId: string) => {
     const { data: acept } = await supabase
       .from('aceptaciones')
@@ -221,6 +226,23 @@ const confirmarIntercambio = async (solicitudId: string) => {
       p_solicitud_id: solicitudId,
       p_aceptante_id: acept.aceptante_id,
     })
+    // Obtener perfiles con teléfono de ambas partes
+    const { data: perfilMio } = await supabase.from('profiles').select('nombre, apellidos, chapa, telefono').eq('id', miId).single()
+    const { data: perfilOtro } = await supabase.from('profiles').select('nombre, apellidos, chapa, telefono').eq('id', acept.aceptante_id).single()
+    const { data: emailMio } = await supabase.rpc('get_user_email', { p_user_id: miId })
+    const { data: emailOtro } = await supabase.rpc('get_user_email', { p_user_id: acept.aceptante_id })
+    const waMio = perfilMio?.telefono ? `<br><br>Contacta con tu compañero por WhatsApp:<br>${waBtn(perfilMio.telefono, `${perfilMio.nombre} ${perfilMio.apellidos}`)}` : ''
+    const waOtro = perfilOtro?.telefono ? `<br><br>Contacta con tu compañero por WhatsApp:<br>${waBtn(perfilOtro.telefono, `${perfilOtro.nombre} ${perfilOtro.apellidos}`)}` : ''
+    if (emailMio && perfilOtro) {
+      await enviarEmail(emailMio, '✅ Intercambio de descanso confirmado - DescansApp',
+        templateNotificacion('¡Intercambio confirmado!',
+          `Tu intercambio con <strong>${perfilOtro.nombre} ${perfilOtro.apellidos}</strong> (chapa ${perfilOtro.chapa}) ha quedado cerrado.<br><br>Recuerda tramitar el cambio en la web del Cpe.${waOtro}`))
+    }
+    if (emailOtro && perfilMio) {
+      await enviarEmail(emailOtro, '✅ Intercambio de descanso confirmado - DescansApp',
+        templateNotificacion('¡Intercambio confirmado!',
+          `Tu intercambio con <strong>${perfilMio.nombre} ${perfilMio.apellidos}</strong> (chapa ${perfilMio.chapa}) ha quedado cerrado.<br><br>Recuerda tramitar el cambio en la web del Cpe.${waMio}`))
+    }
     await cargar()
     setModalDia(null)
     setApuntando(false)

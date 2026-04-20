@@ -51,15 +51,35 @@ export async function GET(request: Request) {
         cadena.tipo === 4 ? { uid: cadena.usuario4_id, perfil: cadena.p4, sol: cadena.s4, confirmado: cadena.confirmado4 } : null,
       ].filter(Boolean) as any[]
 
+        // Obtener teléfonos de todos los participantes
+      const uids = participantes.map((p: any) => p.uid)
+      const { data: perfilesTel } = await supabase.from('profiles').select('id, nombre, apellidos, telefono').in('id', uids)
+      const telMap: Record<string, any> = {}
+      ;(perfilesTel || []).forEach((p: any) => { telMap[p.id] = p })
+
+      const waBtn = (tel: string, nombre: string) =>
+        `<a href="https://wa.me/34${tel.replace(/\s/g,'')}" style="display:inline-flex;align-items:center;gap:6px;background:#25D366;color:#fff;padding:8px 16px;border-radius:6px;text-decoration:none;font-weight:600;font-size:14px;margin:4px 0">
+          <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" width="18" height="18" style="vertical-align:middle"/> Contactar con ${nombre}
+        </a>`
+
       for (const p of participantes.filter((p: any) => !p.confirmado)) {
         const { data: email } = await supabase.rpc('get_user_email', { p_user_id: p.uid })
         if (!email) continue
         const sol = p.sol
         const descripcionDa = sol ? (sol.flexible_ofrecido ? `${sol.num_dias} días entre el ${fmt(sol.ofrecido_ventana_desde)} y el ${fmt(sol.ofrecido_ventana_hasta)}` : `${fmt(sol.ofrecido_desde)} → ${fmt(sol.ofrecido_hasta)}`) : '—'
         const otros = participantes.filter((o: any) => o.uid !== p.uid).map((o: any) => `${o.perfil?.nombre} ${o.perfil?.apellidos}`).join(', ')
+        const otrosWa = participantes
+          .filter((o: any) => o.uid !== p.uid)
+          .map((o: any) => {
+            const pf = telMap[o.uid]
+            return pf?.telefono ? waBtn(pf.telefono, `${pf.nombre} ${pf.apellidos}`) : ''
+          })
+          .filter(Boolean)
+          .join('')
+        const waSeccion = otrosWa ? `<br><br>Contacta con tus compañeros por WhatsApp:<br>${otrosWa}` : ''
         await enviarEmail(email, `⏳ Recuerda confirmar tu cadena de vacaciones (${diasRestantes} días) - DescansApp`,
           templateNotificacion('⏳ Recuerda confirmar tu parte',
-            `Tienes una <strong>cadena de vacaciones de ${cadena.tipo} personas</strong> pendiente de tu confirmación.<br><br>Tú das: <strong>${descripcionDa}</strong><br>Participantes: <strong>${otros}</strong><br><br>Te quedan <strong>${diasRestantes} día${diasRestantes !== 1 ? 's' : ''}</strong> para confirmar. Si no confirmas, la cadena se cancelará automáticamente.<br><br>Entra en DescansApp → Vacaciones → <strong>"Mis solicitudes"</strong> y pulsa <strong>"✓ CONFIRMAR MI PARTE"</strong>.`))
+            `Tienes una <strong>cadena de vacaciones de ${cadena.tipo} personas</strong> pendiente de tu confirmación.<br><br>Tú das: <strong>${descripcionDa}</strong><br>Participantes: <strong>${otros}</strong><br><br>Te quedan <strong>${diasRestantes} día${diasRestantes !== 1 ? 's' : ''}</strong> para confirmar. Si no confirmas, la cadena se cancelará automáticamente.<br><br>Entra en DescansApp → Vacaciones → <strong>"Mis solicitudes"</strong> y pulsa <strong>"✓ CONFIRMAR MI PARTE"</strong>.${waSeccion}`))
       }
     }
 

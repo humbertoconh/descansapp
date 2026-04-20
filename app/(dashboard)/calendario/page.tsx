@@ -226,7 +226,7 @@ function CalendarioContent() {
     })
     // Enviar email al solicitante para que confirme
     const { data: emailData } = await supabase.rpc('get_user_email', { p_user_id: solicitud.solicitante_id })
-    const { data: perfil } = await supabase.from('profiles').select('nombre, apellidos, chapa').eq('id', miId).single()
+    const { data: perfil } = await supabase.from('profiles').select('nombre, apellidos, chapa, telefono').eq('id', miId).single()
     const { data: diaOfrecido } = await supabase.from('dias_ofrecidos').select('fecha').eq('id', diaOfrecidoId).single()
     if (emailData && perfil && diaOfrecido) {
       const { data: perfilSol } = await supabase.from('profiles').select('telefono').eq('id', solicitud.solicitante_id).single()

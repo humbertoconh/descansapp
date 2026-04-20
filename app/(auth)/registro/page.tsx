@@ -49,6 +49,7 @@ export default function RegistroPage() {
       setError('El teléfono debe ser un móvil español válido (6XX o 7XX, 9 dígitos).')
       return
     }
+    if (!aceptaPrivacidad) { setError('Debes aceptar la política de privacidad para registrarte.'); return }
     if (form.password !== form.confirmar) { setError('Las contraseñas no coinciden.'); return }
     if (form.password.length < 6) { setError('La contraseña debe tener al menos 6 caracteres.'); return }
     setLoading(true)
@@ -203,8 +204,24 @@ export default function RegistroPage() {
                   <input name="confirmar" type="password" value={form.confirmar} onChange={handleChange} placeholder="••••••••" required />
                 </div>
               </div>
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.6rem', margin: '0.75rem 0', padding: '0.75rem', background: '#f0ebe5', borderRadius: '3px', border: '1px solid #3a3028' }}>
+                <input
+                  type="checkbox"
+                  id="privacidad"
+                  checked={aceptaPrivacidad}
+                  onChange={e => setAceptaPrivacidad(e.target.checked)}
+                  style={{ marginTop: '3px', accentColor: '#f5c518', width: '16px', height: '16px', flexShrink: 0, cursor: 'pointer' }}
+                />
+                <label htmlFor="privacidad" style={{ fontSize: '0.82rem', color: '#c8c0b4', lineHeight: 1.5, cursor: 'pointer' }}>
+                  He leído y acepto la{' '}
+                  <a href="/privacidad" target="_blank" rel="noopener noreferrer" style={{ color: '#f5c518', fontWeight: 600, textDecoration: 'underline' }}>
+                    Política de Privacidad
+                  </a>
+                  {' '}y consiento el tratamiento de mis datos personales, incluyendo el uso de mi número de teléfono para contacto entre compañeros una vez confirmado un intercambio.
+                </label>
+              </div>
               {error && <div className="error-box">{error}</div>}
-              <button type="submit" className="btn-submit" disabled={loading}>
+              <button type="submit" className="btn-submit" disabled={loading || !aceptaPrivacidad}>
                 {loading ? 'ENVIANDO...' : 'SOLICITAR REGISTRO'}
               </button>
             </form>

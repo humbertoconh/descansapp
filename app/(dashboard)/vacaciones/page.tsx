@@ -57,13 +57,8 @@ const validarRango = (desde: string, hasta: string): string => {
 
 // ─── SELECTOR DE FECHA ───────────────────────────────────────────────────────
 function DatePicker({ value, onChange, label, mesInicial, minDate, maxDate, abreHacia = 'arriba' }: {
-  value: string
-  onChange: (v: string) => void
-  label: string
-  mesInicial?: Date
-  minDate?: Date
-  maxDate?: Date
-  abreHacia?: 'arriba' | 'abajo'
+  value: string; onChange: (v: string) => void; label: string
+  mesInicial?: Date; minDate?: Date; maxDate?: Date; abreHacia?: 'arriba' | 'abajo'
 }) {
   const [abierto, setAbierto] = useState(false)
   const [rect, setRect] = useState<DOMRect | null>(null)
@@ -84,9 +79,7 @@ function DatePicker({ value, onChange, label, mesInicial, minDate, maxDate, abre
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
-      if (btnRef.current && !btnRef.current.closest('[data-datepicker]')?.contains(e.target as Node)) {
-        setAbierto(false)
-      }
+      if (btnRef.current && !btnRef.current.closest('[data-datepicker]')?.contains(e.target as Node)) setAbierto(false)
     }
     if (abierto) document.addEventListener('mousedown', handler)
     return () => document.removeEventListener('mousedown', handler)
@@ -111,18 +104,10 @@ function DatePicker({ value, onChange, label, mesInicial, minDate, maxDate, abre
   }
 
   const calendarStyle: React.CSSProperties = rect ? {
-    position: 'fixed',
-    left: rect.left,
-    width: rect.width,
-    zIndex: 9999,
-    background: '#fff',
-    border: '1px solid #e0d8d0',
-    borderRadius: '4px',
-    boxShadow: '0 4px 24px rgba(0,0,0,0.15)',
-    padding: '0.75rem',
-    ...(abreHacia === 'abajo'
-      ? { top: rect.bottom + 4 }
-      : { bottom: window.innerHeight - rect.top + 4 })
+    position: 'fixed', left: rect.left, width: rect.width, zIndex: 9999,
+    background: '#fff', border: '1px solid #e0d8d0', borderRadius: '4px',
+    boxShadow: '0 4px 24px rgba(0,0,0,0.15)', padding: '0.75rem',
+    ...(abreHacia === 'abajo' ? { top: rect.bottom + 4 } : { bottom: window.innerHeight - rect.top + 4 })
   } : { display: 'none' }
 
   return (
@@ -134,7 +119,6 @@ function DatePicker({ value, onChange, label, mesInicial, minDate, maxDate, abre
         <span>{value ? fmt(value) : 'Selecciona fecha...'}</span>
         <span style={{ fontSize: '0.8rem' }}>📅</span>
       </button>
-
       {abierto && rect && (
         <div style={calendarStyle}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
@@ -143,7 +127,7 @@ function DatePicker({ value, onChange, label, mesInicial, minDate, maxDate, abre
             <button type="button" onClick={() => setMesActual(addMonths(mesActual, 1))} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#4a4038', fontSize: '1.2rem', padding: '0.25rem 0.5rem' }}>›</button>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', marginBottom: '0.25rem' }}>
-            {['L','M','X','J','V','S','D'].map(d => <div key={d} style={{ textAlign: 'center', fontSize: '0.6rem', color: '#8a8070', textTransform: 'uppercase', letterSpacing: '1px', padding: '0.2rem 0' }}>{d}</div>)}
+            {['L','M','X','J','V','S','D'].map(d => <div key={d} style={{ textAlign: 'center', fontSize: '0.6rem', color: '#8a8070', textTransform: 'uppercase', padding: '0.2rem 0' }}>{d}</div>)}
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '2px' }}>
             {Array.from({ length: primerDia }, (_, i) => <div key={`v${i}`} />)}
@@ -173,7 +157,6 @@ function DatePicker({ value, onChange, label, mesInicial, minDate, maxDate, abre
     </div>
   )
 }
-// ─────────────────────────────────────────────────────────────────────────────
 
 function VacacionesContent() {
   const supabase = createClient()
@@ -182,6 +165,7 @@ function VacacionesContent() {
   const [companyeros, setCompanyeros] = useState<any[]>([])
   const [solicitudes, setSolicitudes] = useState<any[]>([])
   const [aceptaciones, setAceptaciones] = useState<any[]>([])
+  const [cadenas, setCadenas] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
   const [modalNueva, setModalNueva] = useState(false)
@@ -211,6 +195,7 @@ function VacacionesContent() {
   const [aceptando, setAceptando] = useState(false)
   const [eliminando, setEliminando] = useState<string | null>(null)
   const [confirmando, setConfirmando] = useState<string | null>(null)
+  const [confirmandoCadena, setConfirmandoCadena] = useState<string | null>(null)
 
   const cargar = async () => {
     const { data: { user } } = await supabase.auth.getUser()
@@ -226,13 +211,30 @@ function VacacionesContent() {
       .from('vacaciones_solicitudes')
       .select('*, profiles(nombre, apellidos, chapa)')
       .in('user_id', ids)
-      .in('estado', ['abierta', 'esperando_confirmacion'])
+      .in('estado', ['abierta', 'esperando_confirmacion', 'en_cadena'])
     setSolicitudes(sols || [])
     const { data: acepts } = await supabase
       .from('vacaciones_aceptaciones')
       .select('*, profiles(nombre, apellidos, chapa)')
       .in('solicitud_id', (sols || []).map((s: any) => s.id))
     setAceptaciones(acepts || [])
+    // Cargar cadenas del usuario
+    const { data: cads } = await supabase
+      .from('vacaciones_cadenas')
+      .select(`
+        *,
+        p1:usuario1_id(nombre, apellidos, chapa),
+        p2:usuario2_id(nombre, apellidos, chapa),
+        p3:usuario3_id(nombre, apellidos, chapa),
+        p4:usuario4_id(nombre, apellidos, chapa),
+        s1:solicitud1_id(ofrecido_desde, ofrecido_hasta, flexible_ofrecido, ofrecido_ventana_desde, ofrecido_ventana_hasta, buscado_desde, buscado_hasta, flexible_buscado, buscado_ventana_desde, buscado_ventana_hasta, num_dias),
+        s2:solicitud2_id(ofrecido_desde, ofrecido_hasta, flexible_ofrecido, ofrecido_ventana_desde, ofrecido_ventana_hasta, buscado_desde, buscado_hasta, flexible_buscado, buscado_ventana_desde, buscado_ventana_hasta, num_dias),
+        s3:solicitud3_id(ofrecido_desde, ofrecido_hasta, flexible_ofrecido, ofrecido_ventana_desde, ofrecido_ventana_hasta, buscado_desde, buscado_hasta, flexible_buscado, buscado_ventana_desde, buscado_ventana_hasta, num_dias),
+        s4:solicitud4_id(ofrecido_desde, ofrecido_hasta, flexible_ofrecido, ofrecido_ventana_desde, ofrecido_ventana_hasta, buscado_desde, buscado_hasta, flexible_buscado, buscado_ventana_desde, buscado_ventana_hasta, num_dias)
+      `)
+      .or(`usuario1_id.eq.${user.id},usuario2_id.eq.${user.id},usuario3_id.eq.${user.id},usuario4_id.eq.${user.id}`)
+      .eq('estado', 'pendiente')
+    setCadenas(cads || [])
     setLoading(false)
   }
 
@@ -241,6 +243,7 @@ function VacacionesContent() {
     const channel = supabase.channel('vacaciones-cambios')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'vacaciones_solicitudes' }, () => cargar())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'vacaciones_aceptaciones' }, () => cargar())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'vacaciones_cadenas' }, () => cargar())
       .subscribe()
     return () => { supabase.removeChannel(channel) }
   }, [])
@@ -397,25 +400,13 @@ function VacacionesContent() {
     const err = validarAceptacion()
     if (err) { alert(`⚠️ ${err}`); return }
     setAceptando(true)
-
     const caso = tipoCaso(modalAceptar)
-    let ofDesde: string | null = null
-    let ofHasta: string | null = null
-    let ofVentDesde: string | null = null
-    let ofVentHasta: string | null = null
-    let numD = modalAceptar.num_dias
-    let esFlexible = false
-
-    if (caso === 'exacto-exacto') {
-      ofDesde = modalAceptar.buscado_desde
-      ofHasta = modalAceptar.buscado_hasta
-    } else if (caso === 'exacto-flexible' || caso === 'flexible-exacto') {
-      ofDesde = aceptDesde; ofHasta = aceptHasta
-      numD = diasEntre(aceptDesde, aceptHasta)
-    } else {
-      ofVentDesde = aceptVentanaDesde; ofVentHasta = aceptVentanaHasta
-      numD = aceptNumDias; esFlexible = true
-    }
+    let ofDesde: string | null = null, ofHasta: string | null = null
+    let ofVentDesde: string | null = null, ofVentHasta: string | null = null
+    let numD = modalAceptar.num_dias, esFlexible = false
+    if (caso === 'exacto-exacto') { ofDesde = modalAceptar.buscado_desde; ofHasta = modalAceptar.buscado_hasta }
+    else if (caso === 'exacto-flexible' || caso === 'flexible-exacto') { ofDesde = aceptDesde; ofHasta = aceptHasta; numD = diasEntre(aceptDesde, aceptHasta) }
+    else { ofVentDesde = aceptVentanaDesde; ofVentHasta = aceptVentanaHasta; numD = aceptNumDias; esFlexible = true }
 
     await supabase.rpc('aceptar_vacacion', {
       p_solicitud_id: modalAceptar.id, p_aceptante_id: miId,
@@ -423,34 +414,22 @@ function VacacionesContent() {
       p_ofrecido_ventana_desde: ofVentDesde, p_ofrecido_ventana_hasta: ofVentHasta,
       p_num_dias: numD, p_flexible: esFlexible,
     })
-
     const { data: miPerfil } = await supabase.from('profiles').select('nombre, apellidos, chapa').eq('id', miId).single()
     if (miPerfil) {
       const loDaA = descripcionLado(modalAceptar, 'ofrecido')
-      const loRecibeA = esFlexible
-        ? `${numD} días entre el ${fmt(ofVentDesde || '')} y el ${fmt(ofVentHasta || '')}`
-        : `${fmt(ofDesde || '')} → ${fmt(ofHasta || '')}`
-
+      const loRecibeA = esFlexible ? `${numD} días entre el ${fmt(ofVentDesde || '')} y el ${fmt(ofVentHasta || '')}` : `${fmt(ofDesde || '')} → ${fmt(ofHasta || '')}`
       await supabase.from('notificaciones').insert({
         user_id: modalAceptar.user_id, tipo: 'aceptacion',
         titulo: '🏖️ Alguien acepta tu intercambio de vacaciones',
         mensaje: `${miPerfil.nombre} ${miPerfil.apellidos} (chapa ${miPerfil.chapa}) acepta tu intercambio. Tú das: ${loDaA}. Tú recibes: ${loRecibeA}. Entra en Vacaciones para confirmarlo.`,
         leida: false,
       })
-
       const { data: emailA } = await supabase.rpc('get_user_email', { p_user_id: modalAceptar.user_id })
-      if (emailA) {
-        await enviarEmail(emailA, '✅ Alguien acepta tu intercambio de vacaciones - DescansApp',
-          templateNotificacion('¡Alguien acepta tu intercambio!',
-            `<strong>${miPerfil.nombre} ${miPerfil.apellidos}</strong> (chapa ${miPerfil.chapa}) acepta el intercambio contigo.<br><br>
-            Tú das: <strong>${loDaA}</strong><br>
-            Tú recibes: <strong>${loRecibeA}</strong><br><br>
-            Entra en DescansApp en la sección Vacaciones para confirmar el intercambio.`))
-      }
+      if (emailA) await enviarEmail(emailA, '✅ Alguien acepta tu intercambio de vacaciones - DescansApp',
+        templateNotificacion('¡Alguien acepta tu intercambio!',
+          `<strong>${miPerfil.nombre} ${miPerfil.apellidos}</strong> (chapa ${miPerfil.chapa}) acepta el intercambio contigo.<br><br>Tú das: <strong>${loDaA}</strong><br>Tú recibes: <strong>${loRecibeA}</strong><br><br>Entra en DescansApp en la sección Vacaciones para confirmar el intercambio.`))
     }
-
-    await cargar()
-    setModalAceptar(null); setModalDetalle(null); resetAceptar(); setAceptando(false)
+    await cargar(); setModalAceptar(null); setModalDetalle(null); resetAceptar(); setAceptando(false)
   }
 
   const confirmarIntercambio = async (solicitudId: string) => {
@@ -463,26 +442,32 @@ function VacacionesContent() {
       const { data: emailB } = await supabase.rpc('get_user_email', { p_user_id: acept.aceptante_id })
       if (perfilA) {
         const loDaB = descripcionLado(sol, 'ofrecido')
-        const loRecibeB = acept.flexible
-          ? `${acept.num_dias} días entre el ${fmt(acept.ofrecido_ventana_desde)} y el ${fmt(acept.ofrecido_ventana_hasta)}`
-          : `${fmt(acept.ofrecido_desde)} → ${fmt(acept.ofrecido_hasta)}`
-        await supabase.from('notificaciones').insert({
-          user_id: acept.aceptante_id, tipo: 'completado',
-          titulo: '✅ Intercambio de vacaciones confirmado',
-          mensaje: `${perfilA.nombre} ${perfilA.apellidos} (chapa ${perfilA.chapa}) ha confirmado el intercambio. Tú das: ${loRecibeB}. Tú recibes: ${loDaB}. Recuerda tramitarlo con el Dpto. de Asignación de Personal.`,
-          leida: false,
-        })
-        if (emailB) {
-          await enviarEmail(emailB, '✅ Intercambio de vacaciones confirmado - DescansApp',
-            templateNotificacion('¡Intercambio de vacaciones confirmado!',
-              `<strong>${perfilA.nombre} ${perfilA.apellidos}</strong> (chapa ${perfilA.chapa}) ha confirmado el intercambio contigo.<br><br>
-              Tú das: <strong>${loRecibeB}</strong><br>
-              Tú recibes: <strong>${loDaB}</strong><br><br>
-              Recuerda tramitar el cambio con el Departamento de Asignación de Personal.`))
-        }
+        const loRecibeB = acept.flexible ? `${acept.num_dias} días entre el ${fmt(acept.ofrecido_ventana_desde)} y el ${fmt(acept.ofrecido_ventana_hasta)}` : `${fmt(acept.ofrecido_desde)} → ${fmt(acept.ofrecido_hasta)}`
+        await supabase.from('notificaciones').insert({ user_id: acept.aceptante_id, tipo: 'completado', titulo: '✅ Intercambio de vacaciones confirmado', mensaje: `${perfilA.nombre} ${perfilA.apellidos} ha confirmado el intercambio. Tú das: ${loRecibeB}. Tú recibes: ${loDaB}. Recuerda tramitarlo con el Dpto. de Asignación de Personal.`, leida: false })
+        if (emailB) await enviarEmail(emailB, '✅ Intercambio de vacaciones confirmado - DescansApp',
+          templateNotificacion('¡Intercambio de vacaciones confirmado!',
+            `<strong>${perfilA.nombre} ${perfilA.apellidos}</strong> (chapa ${perfilA.chapa}) ha confirmado el intercambio contigo.<br><br>Tú das: <strong>${loRecibeB}</strong><br>Tú recibes: <strong>${loDaB}</strong><br><br>Recuerda tramitar el cambio con el Departamento de Asignación de Personal.`))
       }
     }
     await cargar(); setConfirmando(null)
+  }
+
+  const confirmarCadena = async (cadenaId: string, cadena: any) => {
+    setConfirmandoCadena(cadenaId)
+    await supabase.rpc('confirmar_cadena_vacaciones', { p_cadena_id: cadenaId, p_user_id: miId })
+    // Recargar para ver si ya confirmaron todos
+    const { data: cadenaActualizada } = await supabase.from('vacaciones_cadenas').select('*').eq('id', cadenaId).single()
+    if (cadenaActualizada?.estado === 'confirmada') {
+      // Notificar a todos que la cadena está cerrada
+      const participantes = [cadena.usuario1_id, cadena.usuario2_id, cadena.usuario3_id, cadena.usuario4_id].filter(Boolean)
+      for (const uid of participantes) {
+        await supabase.from('notificaciones').insert({ user_id: uid, tipo: 'completado', titulo: '✅ Cadena de vacaciones confirmada', mensaje: `Todos los participantes han confirmado. Recuerda tramitar el cambio con el Departamento de Asignación de Personal.`, leida: false })
+        const { data: emailP } = await supabase.rpc('get_user_email', { p_user_id: uid })
+        if (emailP) await enviarEmail(emailP, '✅ Cadena de vacaciones confirmada - DescansApp',
+          templateNotificacion('¡Cadena de vacaciones confirmada!', `Todos los participantes han confirmado el intercambio en cadena. Recuerda tramitar el cambio con el Departamento de Asignación de Personal.`))
+      }
+    }
+    await cargar(); setConfirmandoCadena(null)
   }
 
   const renderLado = (flexible: boolean, desde: string, hasta: string, numDias: number, ventDesde: string, ventHasta: string) => {
@@ -512,12 +497,37 @@ function VacacionesContent() {
     </div>
   )
 
+  // Helpers de fechas para DatePicker
   const mesDesdeOfrecido = ofrecidoDesde ? new Date(ofrecidoDesde + 'T00:00:00') : undefined
   const mesDesdeVentanaOfrecido = ofrecidoVentanaDesde ? new Date(ofrecidoVentanaDesde + 'T00:00:00') : undefined
   const mesDesdeBuscado = buscadoDesde ? new Date(buscadoDesde + 'T00:00:00') : undefined
   const mesDesdeVentanaBuscado = buscadoVentanaDesde ? new Date(buscadoVentanaDesde + 'T00:00:00') : undefined
   const mesDesdeAcept = aceptDesde ? new Date(aceptDesde + 'T00:00:00') : undefined
   const mesDesdeVentanaAcept = aceptVentanaDesde ? new Date(aceptVentanaDesde + 'T00:00:00') : undefined
+
+  // Cadena de un usuario: obtener su posición y datos
+  const miPosicionEnCadena = (cadena: any) => {
+    if (cadena.usuario1_id === miId) return 1
+    if (cadena.usuario2_id === miId) return 2
+    if (cadena.usuario3_id === miId) return 3
+    if (cadena.usuario4_id === miId) return 4
+    return 0
+  }
+
+  const yoConfirmeEnCadena = (cadena: any) => {
+    const pos = miPosicionEnCadena(cadena)
+    if (pos === 1) return cadena.confirmado1
+    if (pos === 2) return cadena.confirmado2
+    if (pos === 3) return cadena.confirmado3
+    if (pos === 4) return cadena.confirmado4
+    return false
+  }
+
+  const diasParaExpirar = (cadena: any) => {
+    if (!cadena.expira_at) return 0
+    const diff = Math.ceil((new Date(cadena.expira_at).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+    return Math.max(0, diff)
+  }
 
   if (loading) return <div style={{ background: '#f5f0eb', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#c4a520', fontFamily: 'sans-serif', fontSize: '1.5rem', letterSpacing: '3px' }}>CARGANDO...</div>
 
@@ -541,6 +551,12 @@ function VacacionesContent() {
         .mis-sols-titulo { font-family: 'Bebas Neue', sans-serif; font-size: 1.1rem; letter-spacing: 2px; color: #c4a520; margin-bottom: 1rem; }
         .mis-sols-vacio { color: #8a8070; font-size: 0.85rem; }
         .mis-sol-card { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; background: #f5f0eb; border: 1px solid #e0d8d0; border-left: 3px solid #c4a520; border-radius: 3px; padding: 0.75rem; margin-bottom: 0.5rem; }
+        .cadena-card { background: #f5f0eb; border: 1px solid #a78bfa; border-left: 3px solid #a78bfa; border-radius: 3px; padding: 0.75rem; margin-bottom: 0.5rem; }
+        .cadena-titulo { font-family: 'Bebas Neue', sans-serif; font-size: 0.85rem; letter-spacing: 2px; color: #a78bfa; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem; justify-content: space-between; }
+        .cadena-participante { display: flex; align-items: center; gap: 0.5rem; font-size: 0.82rem; color: #4a4038; padding: 0.3rem 0; border-bottom: 1px solid #e0d8d0; }
+        .cadena-participante:last-child { border-bottom: none; }
+        .check-icon { font-size: 0.75rem; color: #34d399; }
+        .pending-icon { font-size: 0.75rem; color: #f5c518; }
         .mis-sol-info { flex: 1; font-size: 0.82rem; color: #4a4038; line-height: 1.9; }
         .mis-sol-label { font-size: 0.62rem; text-transform: uppercase; letter-spacing: 1px; color: #8a8070; display: block; }
         .mis-sol-valor { color: #1a1612; font-weight: 500; }
@@ -551,8 +567,11 @@ function VacacionesContent() {
         .btn-confirmar-sol { background: #34d399; color: #0f0f0f; border: none; padding: 0.35rem 0.8rem; font-family: 'Bebas Neue', sans-serif; font-size: 0.75rem; letter-spacing: 1px; cursor: pointer; border-radius: 2px; white-space: nowrap; }
         .btn-confirmar-sol:hover:not(:disabled) { background: #10b981; }
         .btn-confirmar-sol:disabled { opacity: 0.4; cursor: not-allowed; }
+        .btn-confirmar-cadena { background: #a78bfa; color: #0f0f0f; border: none; padding: 0.35rem 0.8rem; font-family: 'Bebas Neue', sans-serif; font-size: 0.75rem; letter-spacing: 1px; cursor: pointer; border-radius: 2px; white-space: nowrap; margin-top: 0.5rem; }
+        .btn-confirmar-cadena:disabled { opacity: 0.4; cursor: not-allowed; }
         .estado-pill { font-size: 0.62rem; padding: 0.15rem 0.5rem; border-radius: 2px; font-family: 'Bebas Neue', sans-serif; letter-spacing: 1px; white-space: nowrap; }
         .acept-aviso { margin-top: 0.5rem; background: #f0fdf4; border: 1px solid #86efac; border-radius: 3px; padding: 0.4rem 0.6rem; font-size: 0.78rem; color: #166534; }
+        .cadena-aviso { margin-top: 0.5rem; background: #f5f0ff; border: 1px solid #a78bfa; border-radius: 3px; padding: 0.4rem 0.6rem; font-size: 0.78rem; color: #5b21b6; }
         .meses-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.5rem; margin-bottom: 2rem; }
         .mes { background: #fff; border: 1px solid #e0d8d0; border-radius: 4px; padding: 1rem; position: relative; }
         .mes.vacacional { border-color: #f5c518; }
@@ -633,39 +652,95 @@ function VacacionesContent() {
           </div>
         </div>
 
-        {/* MIS SOLICITUDES */}
+        {/* MIS SOLICITUDES + CADENAS */}
         <div className="mis-sols">
-          <div className="mis-sols-titulo">MIS SOLICITUDES ({mySolicitudes.length})</div>
-          {mySolicitudes.length === 0 ? (
+          <div className="mis-sols-titulo">MIS SOLICITUDES ({mySolicitudes.length}) {cadenas.length > 0 && `· 🔗 ${cadenas.length} CADENA${cadenas.length > 1 ? 'S' : ''} PENDIENTE${cadenas.length > 1 ? 'S' : ''}`}</div>
+
+          {/* CADENAS PENDIENTES */}
+          {cadenas.map(cadena => {
+            const pos = miPosicionEnCadena(cadena)
+            const yaConfirme = yoConfirmeEnCadena(cadena)
+            const dias = diasParaExpirar(cadena)
+            const participantes = [
+              { uid: cadena.usuario1_id, perfil: cadena.p1, sol: cadena.s1, conf: cadena.confirmado1 },
+              { uid: cadena.usuario2_id, perfil: cadena.p2, sol: cadena.s2, conf: cadena.confirmado2 },
+              { uid: cadena.usuario3_id, perfil: cadena.p3, sol: cadena.s3, conf: cadena.confirmado3 },
+              cadena.tipo === 4 ? { uid: cadena.usuario4_id, perfil: cadena.p4, sol: cadena.s4, conf: cadena.confirmado4 } : null,
+            ].filter(Boolean)
+
+            return (
+              <div key={cadena.id} className="cadena-card">
+                <div className="cadena-titulo">
+                  <span>🔗 CADENA DE {cadena.tipo} · {dias} días para confirmar</span>
+                  {!yaConfirme && (
+                    <button className="btn-confirmar-cadena" disabled={confirmandoCadena === cadena.id}
+                      onClick={() => confirmarCadena(cadena.id, cadena)}>
+                      {confirmandoCadena === cadena.id ? '...' : '✓ CONFIRMAR MI PARTE'}
+                    </button>
+                  )}
+                  {yaConfirme && <span style={{ fontSize: '0.75rem', color: '#34d399' }}>✓ Ya confirmaste</span>}
+                </div>
+                {participantes.map((p: any, i) => (
+                  <div key={i} className="cadena-participante">
+                    <span>{p.conf ? '✅' : '⏳'}</span>
+                    <span style={{ fontWeight: p.uid === miId ? 600 : 400 }}>
+                      {p.perfil?.nombre} {p.perfil?.apellidos} <span style={{ color: '#8a8070', fontSize: '0.75rem' }}>(chapa {p.perfil?.chapa})</span>
+                      {p.uid === miId && <span className="tag tag-yo" style={{ marginLeft: '0.4rem' }}>YO</span>}
+                    </span>
+                    {p.sol && (
+                      <span style={{ fontSize: '0.75rem', color: '#8a8070', marginLeft: 'auto' }}>
+                        Da: {p.sol.flexible_ofrecido
+                          ? `${p.sol.num_dias}d entre ${fmt(p.sol.ofrecido_ventana_desde)}-${fmt(p.sol.ofrecido_ventana_hasta)}`
+                          : `${fmt(p.sol.ofrecido_desde)}→${fmt(p.sol.ofrecido_hasta)}`}
+                      </span>
+                    )}
+                  </div>
+                ))}
+                <div style={{ fontSize: '0.75rem', color: '#8a8070', marginTop: '0.5rem' }}>
+                  ⚠️ Si no confirman todos en {dias} días, la cadena se cancelará automáticamente.
+                </div>
+              </div>
+            )
+          })}
+
+          {/* MIS SOLICITUDES NORMALES */}
+          {mySolicitudes.length === 0 && cadenas.length === 0 ? (
             <p className="mis-sols-vacio">No tienes solicitudes activas. Pulsa "+ NUEVO INTERCAMBIO" para publicar una.</p>
           ) : mySolicitudes.map(s => {
             const acept = aceptaciones.find(a => a.solicitud_id === s.id)
+            const enCadena = s.estado === 'en_cadena'
             return (
-              <div key={s.id} className="mis-sol-card">
+              <div key={s.id} className="mis-sol-card" style={{ borderLeftColor: enCadena ? '#a78bfa' : '#c4a520' }}>
                 <div className="mis-sol-info">
                   <span className="mis-sol-label">Ofrezco</span>
-                  <span className="mis-sol-valor">{descripcionLado(s, 'ofrecido')}</span>
+                  <span className="mis-sol-valor">{s.flexible_ofrecido
+                    ? `${s.num_dias} días entre el ${fmt(s.ofrecido_ventana_desde)} y el ${fmt(s.ofrecido_ventana_hasta)}`
+                    : `${fmt(s.ofrecido_desde)} → ${fmt(s.ofrecido_hasta)} (${s.ofrecido_desde && s.ofrecido_hasta ? diasEntre(s.ofrecido_desde, s.ofrecido_hasta) : '?'} días)`}</span>
                   <span className="mis-sol-label" style={{ marginTop: '0.3rem' }}>Busco</span>
-                  <span className="mis-sol-valor">{descripcionLado(s, 'buscado')}</span>
-                  {acept && (
+                  <span className="mis-sol-valor">{s.flexible_buscado
+                    ? `${s.num_dias} días entre el ${fmt(s.buscado_ventana_desde)} y el ${fmt(s.buscado_ventana_hasta)}`
+                    : `${fmt(s.buscado_desde)} → ${fmt(s.buscado_hasta)} (${s.buscado_desde && s.buscado_hasta ? diasEntre(s.buscado_desde, s.buscado_hasta) : '?'} días)`}</span>
+                  {enCadena && <div className="cadena-aviso">🔗 Esta solicitud está incluida en una cadena pendiente de confirmación.</div>}
+                  {acept && !enCadena && (
                     <div className="acept-aviso">
                       ✓ <strong>{acept.profiles?.nombre} {acept.profiles?.apellidos}</strong> (chapa {acept.profiles?.chapa}) acepta:{' '}
-                      {acept.flexible
-                        ? `${acept.num_dias} días entre el ${fmt(acept.ofrecido_ventana_desde)} y el ${fmt(acept.ofrecido_ventana_hasta)}`
-                        : `${fmt(acept.ofrecido_desde)} → ${fmt(acept.ofrecido_hasta)}`}
+                      {acept.flexible ? `${acept.num_dias} días entre el ${fmt(acept.ofrecido_ventana_desde)} y el ${fmt(acept.ofrecido_ventana_hasta)}` : `${fmt(acept.ofrecido_desde)} → ${fmt(acept.ofrecido_hasta)}`}
                     </div>
                   )}
                 </div>
                 <div className="mis-sol-acciones">
                   {s.estado === 'esperando_confirmacion' && <span className="estado-pill" style={{ background: '#fef3c7', color: '#92400e' }}>ESPERANDO</span>}
+                  {enCadena && <span className="estado-pill" style={{ background: '#f5f0ff', color: '#5b21b6' }}>EN CADENA</span>}
                   {s.estado === 'esperando_confirmacion' && acept && (
                     <button className="btn-confirmar-sol" disabled={confirmando === s.id} onClick={() => confirmarIntercambio(s.id)}>
                       {confirmando === s.id ? '...' : '✓ CONFIRMAR'}
                     </button>
                   )}
-                  <button className="btn-eliminar-sol" disabled={eliminando === s.id} onClick={() => eliminarSolicitud(s.id)}>
-                    {eliminando === s.id ? '...' : '✕ ELIMINAR'}
-                  </button>
+                  {!enCadena && (
+                    <button className="btn-eliminar-sol" disabled={eliminando === s.id} onClick={() => eliminarSolicitud(s.id)}>
+                      {eliminando === s.id ? '...' : '✕ ELIMINAR'}
+                    </button>
+                  )}
                 </div>
               </div>
             )
@@ -717,11 +792,11 @@ function VacacionesContent() {
         </div>
 
         {/* SOLICITUDES COMPAÑEROS */}
-        {solicitudes.filter(s => s.user_id !== miId).length > 0 && (
+        {solicitudes.filter(s => s.user_id !== miId && s.estado === 'abierta').length > 0 && (
           <>
-            <div className="sols-titulo">SOLICITUDES DE COMPAÑEROS ({solicitudes.filter(s => s.user_id !== miId).length})</div>
+            <div className="sols-titulo">SOLICITUDES DE COMPAÑEROS ({solicitudes.filter(s => s.user_id !== miId && s.estado === 'abierta').length})</div>
             <div className="vac-cards">
-              {solicitudes.filter(s => s.user_id !== miId).map(s => {
+              {solicitudes.filter(s => s.user_id !== miId && s.estado === 'abierta').map(s => {
                 const color = colorPorUsuario[s.user_id] || '#8a8070'
                 return (
                   <div key={s.id} className="vac-card" style={{ borderLeftColor: color }} onClick={() => setModalDetalle(s)}>
@@ -729,7 +804,6 @@ function VacacionesContent() {
                       <div style={{ width: 8, height: 8, borderRadius: '50%', background: color, flexShrink: 0 }} />
                       <span>{s.profiles?.nombre} {s.profiles?.apellidos}</span>
                       <span style={{ color: '#8a8070', fontSize: '0.75rem' }}>chapa {s.profiles?.chapa}</span>
-                      {s.estado === 'esperando_confirmacion' && <span className="estado-pill" style={{ background: '#fef3c7', color: '#92400e' }}>ESPERANDO</span>}
                     </div>
                     <div className="vac-card-rango">
                       <span className="vac-card-label">Ofrece</span>
@@ -760,8 +834,8 @@ function VacacionesContent() {
                   {s.user_id === miId && <span className="tag tag-yo">YO</span>}
                 </div>
                 <div style={{ fontSize: '0.78rem', color: '#4a4038', lineHeight: 1.8 }}>
-                  <strong>Ofrece:</strong> {descripcionLado(s, 'ofrecido')}<br />
-                  <strong>Busca:</strong> {descripcionLado(s, 'buscado')}
+                  <strong>Ofrece:</strong> {s.flexible_ofrecido ? `${s.num_dias} días entre el ${fmt(s.ofrecido_ventana_desde)} y el ${fmt(s.ofrecido_ventana_hasta)}` : `${fmt(s.ofrecido_desde)} → ${fmt(s.ofrecido_hasta)}`}<br />
+                  <strong>Busca:</strong> {s.flexible_buscado ? `${s.num_dias} días entre el ${fmt(s.buscado_ventana_desde)} y el ${fmt(s.buscado_ventana_hasta)}` : `${fmt(s.buscado_desde)} → ${fmt(s.buscado_hasta)}`}
                 </div>
               </div>
             ))}
@@ -786,11 +860,6 @@ function VacacionesContent() {
                 <div><span style={{ fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '1px', color: '#8a8070' }}>Busca </span>{renderLado(modalDetalle.flexible_buscado, modalDetalle.buscado_desde, modalDetalle.buscado_hasta, modalDetalle.num_dias, modalDetalle.buscado_ventana_desde, modalDetalle.buscado_ventana_hasta)}</div>
               </div>
             </div>
-            {modalDetalle.estado === 'esperando_confirmacion' && (
-              <div style={{ background: '#fef3c7', border: '1px solid #fcd34d', borderRadius: '3px', padding: '0.6rem', marginTop: '0.75rem', fontSize: '0.82rem', color: '#92400e' }}>
-                ⏳ Pendiente de confirmación por el solicitante.
-              </div>
-            )}
             <div className="modal-btns">
               {modalDetalle.user_id !== miId && modalDetalle.estado === 'abierta' && (
                 <button className="btn-amarillo" onClick={() => { setModalAceptar(modalDetalle); setModalDetalle(null); resetAceptar() }}>
@@ -806,10 +875,8 @@ function VacacionesContent() {
       {/* MODAL: Aceptar */}
       {modalAceptar && (() => {
         const caso = tipoCaso(modalAceptar)
-        const numExacto = caso === 'exacto-flexible'
-          ? diasEntre(modalAceptar.ofrecido_desde, modalAceptar.ofrecido_hasta)
-          : caso === 'flexible-exacto'
-          ? diasEntre(modalAceptar.buscado_desde, modalAceptar.buscado_hasta)
+        const numExacto = caso === 'exacto-flexible' ? diasEntre(modalAceptar.ofrecido_desde, modalAceptar.ofrecido_hasta)
+          : caso === 'flexible-exacto' ? diasEntre(modalAceptar.buscado_desde, modalAceptar.buscado_hasta)
           : modalAceptar.num_dias
         return (
           <div className="overlay" onClick={() => { setModalAceptar(null); resetAceptar() }}>
@@ -817,9 +884,7 @@ function VacacionesContent() {
               <h3>{caso === 'exacto-exacto' ? 'ACEPTAR INTERCAMBIO' : 'PROPONER INTERCAMBIO'}</h3>
               {caso === 'exacto-exacto' && (
                 <>
-                  <p style={{ fontSize: '0.82rem', color: '#8a8070', marginBottom: '1rem' }}>
-                    Confirma el intercambio con <strong style={{ color: '#1a1612' }}>{modalAceptar.profiles?.nombre} {modalAceptar.profiles?.apellidos}</strong>:
-                  </p>
+                  <p style={{ fontSize: '0.82rem', color: '#8a8070', marginBottom: '1rem' }}>Confirma el intercambio con <strong style={{ color: '#1a1612' }}>{modalAceptar.profiles?.nombre} {modalAceptar.profiles?.apellidos}</strong>:</p>
                   <div className="resumen-intercambio">
                     <div><span style={{ fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '1px', color: '#8a8070' }}>Tú recibes </span><strong style={{ color: '#c4a520' }}>{fmt(modalAceptar.ofrecido_desde)} → {fmt(modalAceptar.ofrecido_hasta)}</strong></div>
                     <div><span style={{ fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '1px', color: '#8a8070' }}>Tú das </span><strong style={{ color: '#c4a520' }}>{fmt(modalAceptar.buscado_desde)} → {fmt(modalAceptar.buscado_hasta)}</strong></div>
@@ -831,38 +896,20 @@ function VacacionesContent() {
                 <>
                   <p style={{ fontSize: '0.82rem', color: '#8a8070', marginBottom: '0.75rem' }}>
                     <strong style={{ color: '#1a1612' }}>{modalAceptar.profiles?.nombre}</strong> ofrece{' '}
-                    {caso === 'exacto-flexible'
-                      ? renderLado(false, modalAceptar.ofrecido_desde, modalAceptar.ofrecido_hasta, modalAceptar.num_dias, '', '')
-                      : renderLado(true, '', '', modalAceptar.num_dias, modalAceptar.ofrecido_ventana_desde, modalAceptar.ofrecido_ventana_hasta)}
+                    {caso === 'exacto-flexible' ? renderLado(false, modalAceptar.ofrecido_desde, modalAceptar.ofrecido_hasta, modalAceptar.num_dias, '', '') : renderLado(true, '', '', modalAceptar.num_dias, modalAceptar.ofrecido_ventana_desde, modalAceptar.ofrecido_ventana_hasta)}
                     {' '}y busca{' '}
-                    {caso === 'exacto-flexible'
-                      ? renderLado(true, '', '', modalAceptar.num_dias, modalAceptar.buscado_ventana_desde, modalAceptar.buscado_ventana_hasta)
-                      : renderLado(false, modalAceptar.buscado_desde, modalAceptar.buscado_hasta, modalAceptar.num_dias, '', '')}.
+                    {caso === 'exacto-flexible' ? renderLado(true, '', '', modalAceptar.num_dias, modalAceptar.buscado_ventana_desde, modalAceptar.buscado_ventana_hasta) : renderLado(false, modalAceptar.buscado_desde, modalAceptar.buscado_hasta, modalAceptar.num_dias, '', '')}.
                   </p>
-                  <div className="ventana-info">
-                    📅 Elige <strong>{numExacto} días exactos</strong> dentro de la ventana:{' '}
-                    <strong>
-                      {caso === 'exacto-flexible'
-                        ? `${fmt(modalAceptar.buscado_ventana_desde)} — ${fmt(modalAceptar.buscado_ventana_hasta)}`
-                        : `${fmt(modalAceptar.ofrecido_ventana_desde)} — ${fmt(modalAceptar.ofrecido_ventana_hasta)}`}
-                    </strong>
-                  </div>
-                  {/* Aceptar: abrir abajo el Desde, arriba el Hasta */}
-                  <DatePicker label="Desde" value={aceptDesde} abreHacia="arriba"
-                    onChange={v => { setAceptDesde(v); if (aceptHasta && v > aceptHasta) setAceptHasta('') }}
+                  <div className="ventana-info">📅 Elige <strong>{numExacto} días exactos</strong> dentro de la ventana: <strong>{caso === 'exacto-flexible' ? `${fmt(modalAceptar.buscado_ventana_desde)} — ${fmt(modalAceptar.buscado_ventana_hasta)}` : `${fmt(modalAceptar.ofrecido_ventana_desde)} — ${fmt(modalAceptar.ofrecido_ventana_hasta)}`}</strong></div>
+                  <DatePicker label="Desde" value={aceptDesde} abreHacia="arriba" onChange={v => { setAceptDesde(v); if (aceptHasta && v > aceptHasta) setAceptHasta('') }}
                     minDate={caso === 'exacto-flexible' ? new Date(modalAceptar.buscado_ventana_desde + 'T00:00:00') : new Date(modalAceptar.ofrecido_ventana_desde + 'T00:00:00')}
-                    maxDate={caso === 'exacto-flexible' ? new Date(modalAceptar.buscado_ventana_hasta + 'T00:00:00') : new Date(modalAceptar.ofrecido_ventana_hasta + 'T00:00:00')}
-                  />
-                  <DatePicker label="Hasta" value={aceptHasta} abreHacia="arriba"
-                    onChange={setAceptHasta} mesInicial={mesDesdeAcept}
+                    maxDate={caso === 'exacto-flexible' ? new Date(modalAceptar.buscado_ventana_hasta + 'T00:00:00') : new Date(modalAceptar.ofrecido_ventana_hasta + 'T00:00:00')} />
+                  <DatePicker label="Hasta" value={aceptHasta} abreHacia="arriba" onChange={setAceptHasta} mesInicial={mesDesdeAcept}
                     minDate={aceptDesde ? parseISO(aceptDesde) : limite7dias}
-                    maxDate={caso === 'exacto-flexible' ? new Date(modalAceptar.buscado_ventana_hasta + 'T00:00:00') : new Date(modalAceptar.ofrecido_ventana_hasta + 'T00:00:00')}
-                  />
+                    maxDate={caso === 'exacto-flexible' ? new Date(modalAceptar.buscado_ventana_hasta + 'T00:00:00') : new Date(modalAceptar.ofrecido_ventana_hasta + 'T00:00:00')} />
                   <Aviso desde={aceptDesde} hasta={aceptHasta} />
                   {aceptDesde && aceptHasta && aceptDesde <= aceptHasta && diasEntre(aceptDesde, aceptHasta) !== numExacto && (
-                    <div style={{ fontSize: '0.75rem', color: '#c04040', background: '#fde8e8', borderRadius: '3px', padding: '0.35rem 0.6rem', marginTop: '0.3rem' }}>
-                      ⚠️ Has seleccionado {diasEntre(aceptDesde, aceptHasta)} días, necesitas exactamente {numExacto}
-                    </div>
+                    <div style={{ fontSize: '0.75rem', color: '#c04040', background: '#fde8e8', borderRadius: '3px', padding: '0.35rem 0.6rem', marginTop: '0.3rem' }}>⚠️ Has seleccionado {diasEntre(aceptDesde, aceptHasta)} días, necesitas exactamente {numExacto}</div>
                   )}
                 </>
               )}
@@ -871,13 +918,9 @@ function VacacionesContent() {
                   <p style={{ fontSize: '0.82rem', color: '#8a8070', marginBottom: '0.75rem' }}>
                     <strong style={{ color: '#1a1612' }}>{modalAceptar.profiles?.nombre}</strong> ofrece{' '}
                     {renderLado(true, '', '', modalAceptar.num_dias, modalAceptar.ofrecido_ventana_desde, modalAceptar.ofrecido_ventana_hasta)}
-                    {' '}y busca{' '}
-                    {renderLado(true, '', '', modalAceptar.num_dias, modalAceptar.buscado_ventana_desde, modalAceptar.buscado_ventana_hasta)}.
+                    {' '}y busca{' '}{renderLado(true, '', '', modalAceptar.num_dias, modalAceptar.buscado_ventana_desde, modalAceptar.buscado_ventana_hasta)}.
                   </p>
-                  <div className="field">
-                    <label>Número de días que ofreces / buscas</label>
-                    <input type="number" min={1} max={30} value={aceptNumDias} onChange={e => setAceptNumDias(Number(e.target.value))} />
-                  </div>
+                  <div className="field"><label>Número de días que ofreces / buscas</label><input type="number" min={1} max={30} value={aceptNumDias} onChange={e => setAceptNumDias(Number(e.target.value))} /></div>
                   <DatePicker label="Tu ventana desde" value={aceptVentanaDesde} abreHacia="arriba" onChange={setAceptVentanaDesde} minDate={limite7dias} />
                   <DatePicker label="Tu ventana hasta" value={aceptVentanaHasta} abreHacia="arriba" onChange={setAceptVentanaHasta} mesInicial={mesDesdeVentanaAcept} minDate={aceptVentanaDesde ? parseISO(aceptVentanaDesde) : limite7dias} />
                   {aceptVentanaDesde && aceptVentanaHasta && <div className="ventana-aviso">💡 El otro elegirá {aceptNumDias} días dentro de tu ventana</div>}
@@ -894,26 +937,19 @@ function VacacionesContent() {
         )
       })()}
 
-      {/* MODAL: Nueva solicitud */}
+      {/* MODAL: Nueva */}
       {modalNueva && (
         <div className="overlay" onClick={() => { setModalNueva(false); resetForm() }}>
           <div className="modal" onClick={e => e.stopPropagation()}>
             <h3>NUEVO INTERCAMBIO</h3>
-            <p style={{ fontSize: '0.8rem', color: '#8a8070', marginBottom: '1rem' }}>
-              Indica qué días ofreces y qué días buscas. Mínimo 7 días de antelación.
-            </p>
-
-            {/* LO QUE OFRECES — calendarios abren hacia abajo */}
+            <p style={{ fontSize: '0.8rem', color: '#8a8070', marginBottom: '1rem' }}>Indica qué días ofreces y qué días buscas. Mínimo 7 días de antelación.</p>
             <div className="bloque-lado">
               <div className="bloque-lado-titulo">📤 LO QUE OFRECES</div>
               <label className="toggle-flexible"><input type="checkbox" checked={ofrecidoFlexible} onChange={e => setOfrecidoFlexible(e.target.checked)} />Flexible (indico una ventana de fechas)</label>
               {ofrecidoFlexible ? (
                 <>
-                  {buscadoFlexible
-                    ? <div className="field"><label>Número de días que ofreces</label><input type="number" min={1} max={30} value={ofrecidoNumDias} onChange={e => setOfrecidoNumDias(Number(e.target.value))} /></div>
-                    : buscadoDesde && buscadoHasta
-                    ? <InfoDiasAuto dias={diasEntre(buscadoDesde, buscadoHasta)} texto="Ofrecerás" />
-                    : null}
+                  {buscadoFlexible ? <div className="field"><label>Número de días que ofreces</label><input type="number" min={1} max={30} value={ofrecidoNumDias} onChange={e => setOfrecidoNumDias(Number(e.target.value))} /></div>
+                    : buscadoDesde && buscadoHasta ? <InfoDiasAuto dias={diasEntre(buscadoDesde, buscadoHasta)} texto="Ofrecerás" /> : null}
                   <DatePicker label="Ventana desde" value={ofrecidoVentanaDesde} abreHacia="abajo" onChange={setOfrecidoVentanaDesde} minDate={limite7dias} />
                   <DatePicker label="Ventana hasta" value={ofrecidoVentanaHasta} abreHacia="abajo" onChange={setOfrecidoVentanaHasta} mesInicial={mesDesdeVentanaOfrecido} minDate={ofrecidoVentanaDesde ? parseISO(ofrecidoVentanaDesde) : limite7dias} />
                   {ofrecidoVentanaDesde && ofrecidoVentanaHasta && ofrecidoVentanaDesde <= ofrecidoVentanaHasta && <div className="ventana-aviso">💡 {numDiasOfrecido} días a elegir dentro de esa ventana</div>}
@@ -926,18 +962,13 @@ function VacacionesContent() {
                 </>
               )}
             </div>
-
-            {/* LO QUE BUSCAS — calendarios abren hacia arriba */}
             <div className="bloque-lado">
               <div className="bloque-lado-titulo">📥 LO QUE BUSCAS</div>
               <label className="toggle-flexible"><input type="checkbox" checked={buscadoFlexible} onChange={e => setBuscadoFlexible(e.target.checked)} />Flexible (indico una ventana de fechas)</label>
               {buscadoFlexible ? (
                 <>
-                  {ofrecidoFlexible
-                    ? <div className="field"><label>Número de días que buscas</label><input type="number" min={1} max={30} value={buscadoNumDias} onChange={e => setBuscadoNumDias(Number(e.target.value))} /></div>
-                    : ofrecidoDesde && ofrecidoHasta
-                    ? <InfoDiasAuto dias={diasEntre(ofrecidoDesde, ofrecidoHasta)} texto="Buscarás" />
-                    : null}
+                  {ofrecidoFlexible ? <div className="field"><label>Número de días que buscas</label><input type="number" min={1} max={30} value={buscadoNumDias} onChange={e => setBuscadoNumDias(Number(e.target.value))} /></div>
+                    : ofrecidoDesde && ofrecidoHasta ? <InfoDiasAuto dias={diasEntre(ofrecidoDesde, ofrecidoHasta)} texto="Buscarás" /> : null}
                   <DatePicker label="Ventana desde" value={buscadoVentanaDesde} abreHacia="arriba" onChange={setBuscadoVentanaDesde} minDate={limite7dias} />
                   <DatePicker label="Ventana hasta" value={buscadoVentanaHasta} abreHacia="arriba" onChange={setBuscadoVentanaHasta} mesInicial={mesDesdeVentanaBuscado} minDate={buscadoVentanaDesde ? parseISO(buscadoVentanaDesde) : limite7dias} />
                   {buscadoVentanaDesde && buscadoVentanaHasta && buscadoVentanaDesde <= buscadoVentanaHasta && <div className="ventana-aviso">💡 {numDiasBuscado} días a elegir dentro de esa ventana</div>}
@@ -950,7 +981,6 @@ function VacacionesContent() {
                 </>
               )}
             </div>
-
             {errorForm && <div className="error-form">⚠️ {errorForm}</div>}
             <div className="modal-btns">
               <button className="btn-amarillo" disabled={guardando} onClick={crearSolicitud}>{guardando ? 'PUBLICANDO...' : 'PUBLICAR SOLICITUD'}</button>

@@ -236,7 +236,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           .hamburger { display: block; }
           .notif-btn-movil { display: flex !important; }
           .nav-centro-movil { display: flex !important; }
-          .menu-movil { display: flex; flex-direction: column; background: #f5f0eb; border-bottom: 1px solid #e0d8d0; padding: 1rem; gap: 0.5rem; }
+          .menu-movil { display: flex; flex-direction: column; background: #f5f0eb; border-bottom: 1px solid #e0d8d0; padding: 1rem; gap: 0.5rem; position: fixed; top: 56px; left: 0; right: 0; z-index: 150; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
           .menu-movil.cerrado { display: none; }
           .nav-link-movil { font-family: 'Bebas Neue', sans-serif; font-size: 1rem; letter-spacing: 2px; color: #4a4038; text-decoration: none; padding: 0.75rem 1rem; border-radius: 2px; }
           .nav-link-movil.active { color: #c4a520; background: #ede8e0; }

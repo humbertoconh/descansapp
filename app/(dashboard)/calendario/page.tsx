@@ -458,7 +458,7 @@ return (
 <div className="cal-page">
         <div className="cal-header">
           <div>
-            <h1>CALENDARIO</h1>
+            <h1>DESCANSOS</h1>
             <p>Pincha cualquier día para ver o crear solicitudes de intercambio</p>
 {companyeros.find(c => c.id === miId)?.grupo && (
   <div style={{ marginTop: '0.4rem', display: 'inline-flex', alignItems: 'center', gap: '0.5rem', background: '#fff', border: '1px solid #e0d8d0', borderRadius: '3px', padding: '0.3rem 0.8rem' }}>

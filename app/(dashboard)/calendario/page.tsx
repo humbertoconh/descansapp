@@ -93,7 +93,7 @@ function CalendarioContent() {
       .from('solicitudes')
       .select('*, profiles(nombre, apellidos, chapa)')
       .eq('solicitante_id', user.id)
-      .eq('estado', 'confirmada')
+      .eq('estado', 'completada')
       .gte('updated_at', hace10.toISOString())
       .order('updated_at', { ascending: false })
     const { data: acepts_rec } = await supabase
@@ -229,12 +229,14 @@ function CalendarioContent() {
     const { data: perfil } = await supabase.from('profiles').select('nombre, apellidos, chapa').eq('id', miId).single()
     const { data: diaOfrecido } = await supabase.from('dias_ofrecidos').select('fecha').eq('id', diaOfrecidoId).single()
     if (emailData && perfil && diaOfrecido) {
+      const { data: perfilSol } = await supabase.from('profiles').select('telefono').eq('id', solicitud.solicitante_id).single()
+      const waSol = perfil.telefono ? `<br><br>Contacta con tu compañero:<br>${waBtn(perfil.telefono, `${perfil.nombre} ${perfil.apellidos}`)}` : ''
       await enviarEmail(
         emailData,
         '⚡ Alguien acepta tu intercambio - DescansApp',
         templateNotificacion(
           '¡Alguien acepta tu intercambio!',
-          `${perfil.nombre} ${perfil.apellidos} (chapa ${perfil.chapa}) acepta darte el ${fmt(diaOfrecido.fecha)} a cambio del ${fmt(solicitud.dia_pedido)}. Entra en DescansApp para confirmar el intercambio.`
+          `${perfil.nombre} ${perfil.apellidos} (chapa ${perfil.chapa}) acepta darte el ${fmt(diaOfrecido.fecha)} a cambio del ${fmt(solicitud.dia_pedido)}. Entra en DescansApp para confirmar el intercambio.${waSol}`
         )
       )
     }
@@ -316,8 +318,12 @@ if (sueltoExistente) {
   const { data: emailC } = await supabase.rpc('get_user_email', { p_user_id: sueltoExistente.user_id })
   const { data: perfilC } = await supabase.from('profiles').select('nombre, apellidos, chapa').eq('id', sueltoExistente.user_id).single()
   const { data: perfilA } = await supabase.from('profiles').select('nombre, apellidos, chapa').eq('id', miId).single()
-  if (emailA && perfilC) await enviarEmail(emailA, '🎉 ¡Te han asignado un día! - DescansApp', templateNotificacion('¡Te han asignado un día!', `${perfilC.nombre} ${perfilC.apellidos} (chapa ${perfilC.chapa}) tiene el ${fmt(fecha)} disponible y es tuyo. Recuerda tramitar el cambio en la web del Cpe.`))
-  if (emailC && perfilA) await enviarEmail(emailC, '📅 Día asignado - DescansApp', templateNotificacion('Día asignado automáticamente', `Tu día ${fmt(fecha)} ha sido asignado a ${perfilA.nombre} ${perfilA.apellidos} (chapa ${perfilA.chapa}). Recuerda tramitar el cambio en la web del Cpe.`))
+  const { data: perfilCTel } = await supabase.from('profiles').select('telefono').eq('id', sueltoExistente.user_id).single()
+  const { data: perfilATel } = await supabase.from('profiles').select('telefono').eq('id', miId).single()
+  const waC = perfilCTel?.telefono ? `<br><br>Contacta con tu compañero:<br>${waBtn(perfilCTel.telefono, `${perfilC?.nombre} ${perfilC?.apellidos}`)}` : ''
+  const waA = perfilATel?.telefono ? `<br><br>Contacta con tu compañero:<br>${waBtn(perfilATel.telefono, `${perfilA?.nombre} ${perfilA?.apellidos}`)}` : ''
+  if (emailA && perfilC) await enviarEmail(emailA, '🎉 ¡Te han asignado un día! - DescansApp', templateNotificacion('¡Te han asignado un día!', `${perfilC.nombre} ${perfilC.apellidos} (chapa ${perfilC.chapa}) tiene el ${fmt(fecha)} disponible y es tuyo. Recuerda tramitar el cambio en la web del Cpe.${waC}`))
+  if (emailC && perfilA) await enviarEmail(emailC, '📅 Día asignado - DescansApp', templateNotificacion('Día asignado automáticamente', `Tu día ${fmt(fecha)} ha sido asignado a ${perfilA.nombre} ${perfilA.apellidos} (chapa ${perfilA.chapa}). Recuerda tramitar el cambio en la web del Cpe.${waA}`))
 }
 
       await cargar()
@@ -342,14 +348,28 @@ const soltarDia = async (fecha: string) => {
     const { data: suelto } = await supabase.from('dias_sueltos').select('asignado_a, fecha').eq('user_id', miId).eq('fecha', fecha).single()
     if (suelto?.asignado_a) {
       const { data: emailData } = await supabase.rpc('get_user_email', { p_user_id: suelto.asignado_a })
-      const { data: perfil } = await supabase.from('profiles').select('nombre, apellidos, chapa').eq('id', miId).single()
+      const { data: perfil } = await supabase.from('profiles').select('nombre, apellidos, chapa, telefono').eq('id', miId).single()
+      const { data: perfilAsig } = await supabase.from('profiles').select('nombre, apellidos, telefono').eq('id', suelto.asignado_a).single()
+      const { data: emailMio } = await supabase.rpc('get_user_email', { p_user_id: miId })
       if (emailData && perfil) {
+        const waPerfilMio = perfil.telefono ? `<br><br>Contacta con tu compañero:<br>${waBtn(perfil.telefono, `${perfil.nombre} ${perfil.apellidos}`)}` : ''
         await enviarEmail(
           emailData,
           '🎉 ¡Te han asignado un día! - DescansApp',
           templateNotificacion(
             '¡Te han asignado un día!',
-            `${perfil.nombre} ${perfil.apellidos} (chapa ${perfil.chapa}) te ha soltado el ${fmt(fecha)}. ¡Es tuyo! Recuerda tramitar el cambio en la web del Cpe.`
+            `${perfil.nombre} ${perfil.apellidos} (chapa ${perfil.chapa}) te ha soltado el ${fmt(fecha)}. ¡Es tuyo! Recuerda tramitar el cambio en la web del Cpe.${waPerfilMio}`
+          )
+        )
+      }
+      if (emailMio && perfilAsig) {
+        const waAsig = perfilAsig.telefono ? `<br><br>Contacta con tu compañero:<br>${waBtn(perfilAsig.telefono, `${perfilAsig.nombre} ${perfilAsig.apellidos}`)}` : ''
+        await enviarEmail(
+          emailMio,
+          '📅 Tu día ha sido asignado - DescansApp',
+          templateNotificacion(
+            'Tu día ha sido asignado',
+            `Tu día ${fmt(fecha)} ha sido asignado a ${perfilAsig.nombre} ${perfilAsig.apellidos}. Recuerda tramitar el cambio en la web del Cpe.${waAsig}`
           )
         )
       }

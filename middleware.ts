@@ -28,7 +28,7 @@ export async function middleware(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
 
   const isAuthRoute = request.nextUrl.pathname.startsWith('/login') ||
-    request.nextUrl.pathname.startsWith('/registro') || request.nextUrl.pathname.startsWith('/reset-password') || request.nextUrl.pathname.startsWith('/update-password')
+    request.nextUrl.pathname.startsWith('/registro') || request.nextUrl.pathname.startsWith('/reset-password') || request.nextUrl.pathname.startsWith('/update-password') || request.nextUrl.pathname.startsWith('/privacidad')
 
   if (!user && !isAuthRoute) {
     const url = request.nextUrl.clone()

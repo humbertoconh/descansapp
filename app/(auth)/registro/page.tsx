@@ -124,10 +124,17 @@ export default function RegistroPage() {
         .divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: #2a2420; }
         .login-link { text-align: center; margin-top: 1.5rem; font-size: 0.82rem; color: #c8c0b4; }
         .login-link a { color: #f5c518; text-decoration: none; font-weight: 500; }
-        @media (max-width: 768px) { .page { grid-template-columns: 1fr; } .panel-izq { display: none; } .panel-der { padding: 2rem 1.5rem; } }
+        .logo-movil { display: none; justify-content: center; margin-bottom: 1.5rem; }
+        .logo-movil-img { width: 90px; height: 90px; object-fit: contain; border-radius: 50%; background: #fff; padding: 6px; box-shadow: 0 4px 16px rgba(0,0,0,0.3); }
+        .sindicato-logo { position: absolute; top: 2.5rem; left: 50%; transform: translateX(-50%); z-index: 2; }
+        .sindicato-logo-img { width: 160px; height: 160px; object-fit: contain; border-radius: 50%; background: #fff; padding: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.4); }
+        @media (max-width: 768px) { .page { grid-template-columns: 1fr; } .panel-izq { display: none; } .panel-der { padding: 2rem 1.5rem; } .logo-movil { display: flex; } }
       `}</style>
       <div className="page">
         <div className="panel-izq">
+          <div className="sindicato-logo">
+            <img src="/LOGO_SOMT_GANCHO.png" alt="Coordinadora Somt" className="sindicato-logo-img" />
+          </div>
           <div className="panel-logo">
             <h1>DESCANS<br />APP</h1>
             <p>Sistema de gestión e intercambio de descansos entre compañeros.</p>
@@ -140,6 +147,9 @@ export default function RegistroPage() {
         </div>
         <div className="panel-der">
           <div className="form-wrapper">
+            <div className="logo-movil">
+              <img src="/LOGO_SOMT_GANCHO.png" alt="Coordinadora Somt" className="logo-movil-img" />
+            </div>
             <div className="form-header">
               <h2>CREAR CUENTA</h2>
               <p>Tu solicitud será revisada por el administrador</p>

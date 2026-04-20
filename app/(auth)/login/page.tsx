@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
+import Image from 'next/image'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -21,31 +22,26 @@ export default function LoginPage() {
     e.preventDefault()
     setLoading(true)
     setError(null)
-
     const { data, error: authError } = await supabase.auth.signInWithPassword({
       email: form.email,
       password: form.password,
     })
-
     if (authError || !data.user) {
       setError('Email o contraseña incorrectos.')
       setLoading(false)
       return
     }
-
     const { data: profile } = await supabase
       .from('profiles')
       .select('aprobado')
       .eq('id', data.user.id)
       .single()
-
     if (!profile?.aprobado) {
       await supabase.auth.signOut()
       setError('Tu cuenta aún no ha sido aprobada por el administrador.')
       setLoading(false)
       return
     }
-
     router.push('/calendario')
     router.refresh()
   }
@@ -62,6 +58,8 @@ export default function LoginPage() {
         .panel-logo { position: relative; z-index: 1; }
         .panel-logo h1 { font-family: 'Bebas Neue', sans-serif; font-size: 5rem; line-height: 0.9; color: #f5c518; letter-spacing: 2px; }
         .panel-logo p { margin-top: 1rem; color: #e8e0d4; font-size: 0.95rem; max-width: 280px; line-height: 1.6; }
+        .sindicato-logo { position: absolute; top: 2.5rem; left: 50%; transform: translateX(-50%); z-index: 2; }
+        .sindicato-logo-img { width: 160px; height: 160px; object-fit: contain; border-radius: 50%; background: #fff; padding: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.4); }
         .panel-der { background: #141210; display: flex; align-items: center; justify-content: center; padding: 3rem 4rem; }
         .form-wrapper { width: 100%; max-width: 380px; }
         .form-header { margin-bottom: 2.5rem; }
@@ -79,10 +77,20 @@ export default function LoginPage() {
         .btn-submit:disabled { opacity: 0.5; cursor: not-allowed; }
         .registro-link { text-align: center; margin-top: 1.5rem; font-size: 0.82rem; color: #c8c0b4; }
         .registro-link a { color: #f5c518; text-decoration: none; font-weight: 500; }
-        @media (max-width: 768px) { .page { grid-template-columns: 1fr; } .panel-izq { display: none; } .panel-der { padding: 2rem 1.5rem; } }
+        .logo-movil { display: none; justify-content: center; margin-bottom: 1.5rem; }
+        .logo-movil-img { width: 90px; height: 90px; object-fit: contain; border-radius: 50%; background: #fff; padding: 6px; box-shadow: 0 4px 16px rgba(0,0,0,0.3); }
+        @media (max-width: 768px) {
+          .page { grid-template-columns: 1fr; }
+          .panel-izq { display: none; }
+          .panel-der { padding: 2rem 1.5rem; }
+          .logo-movil { display: flex; }
+        }
       `}</style>
       <div className="page">
         <div className="panel-izq">
+          <div className="sindicato-logo">
+            <img src="/LOGO_SOMT_GANCHO.png" alt="Coordinadora Somt" className="sindicato-logo-img" />
+          </div>
           <div className="panel-logo">
             <h1>DESCANS<br />APP</h1>
             <p>Gestiona e intercambia tus días de descanso con tus compañeros de grupo.</p>
@@ -90,6 +98,9 @@ export default function LoginPage() {
         </div>
         <div className="panel-der">
           <div className="form-wrapper">
+            <div className="logo-movil">
+              <img src="/LOGO_SOMT_GANCHO.png" alt="Coordinadora Somt" className="logo-movil-img" />
+            </div>
             <div className="form-header">
               <h2>INICIAR SESIÓN</h2>
               <p>Accede con tu correo y contraseña</p>

@@ -39,6 +39,8 @@ function CalendarioContent() {
   const [companyeros, setCompanyeros] = useState<any[]>([])
   const [miId, setMiId] = useState('')
   const [loading, setLoading] = useState(true)
+  const [recientes, setRecientes] = useState<any[]>([])
+  const [recientesAbierto, setRecientesAbierto] = useState(false)
   const [modalDia, setModalDia] = useState<{ fecha: string; quieren: Solicitud[]; ofrecen: Solicitud[] } | null>(null)
   const [modalNueva, setModalNueva] = useState(false)
   const [diaPedido, setDiaPedido] = useState('')
@@ -84,6 +86,37 @@ function CalendarioContent() {
     setDiasSueltos(sueltos || [])
     const { data: perfil } = await supabase.from('profiles').select('is_admin').eq('id', user.id).single()
     setEsAdmin(perfil?.is_admin || false)
+    // Cargar intercambios confirmados en los últimos 10 días
+    const hace10 = new Date()
+    hace10.setDate(hace10.getDate() - 10)
+    const { data: sols_rec } = await supabase
+      .from('solicitudes')
+      .select('*, profiles(nombre, apellidos, chapa)')
+      .eq('solicitante_id', user.id)
+      .eq('estado', 'confirmada')
+      .gte('updated_at', hace10.toISOString())
+      .order('updated_at', { ascending: false })
+    const { data: acepts_rec } = await supabase
+      .from('aceptaciones')
+      .select('*, profiles(nombre, apellidos, chapa), solicitudes!inner(dia_pedido, solicitante_id, profiles(nombre, apellidos, chapa, telefono))')
+      .eq('aceptante_id', user.id)
+      .gte('created_at', hace10.toISOString())
+      .order('created_at', { ascending: false })
+    // Combinar: soy solicitante confirmado
+    const recList: any[] = []
+    for (const s of sols_rec || []) {
+      const acept = (await supabase.from('aceptaciones').select('*, profiles(nombre, apellidos, chapa, telefono)').eq('solicitud_id', s.id).single()).data
+      if (acept) recList.push({ tipo: 'solicitante', dia: s.dia_pedido, companyero: acept.profiles, fecha: s.updated_at })
+    }
+    // Soy aceptante confirmado
+    for (const a of acepts_rec || []) {
+      const sol = (a as any).solicitudes
+      if (sol && sol.solicitante_id !== user.id) {
+        recList.push({ tipo: 'aceptante', dia: sol.dia_pedido, companyero: sol.profiles, fecha: a.created_at })
+      }
+    }
+    recList.sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime())
+    setRecientes(recList.slice(0, 10))
     setLoading(false)
   }
 
@@ -522,6 +555,38 @@ return (
             </div>
           </div>
         </div>
+        {/* INTERCAMBIOS RECIENTES */}
+        {recientes.length > 0 && (
+          <div style={{ marginBottom: '1.5rem' }}>
+            <button
+              onClick={() => setRecientesAbierto(!recientesAbierto)}
+              style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'Bebas Neue, sans-serif', fontSize: '1rem', letterSpacing: '2px', color: '#c4a520', padding: '0.5rem 0', width: '100%', justifyContent: 'space-between' }}>
+              <span>📋 INTERCAMBIOS RECIENTES ({recientes.length})</span>
+              <span style={{ fontSize: '0.8rem', color: '#8a8070' }}>{recientesAbierto ? '▲ CERRAR' : '▼ VER'}</span>
+            </button>
+            {recientesAbierto && (
+              <div style={{ background: '#fff', border: '1px solid #e0d8d0', borderRadius: '4px', padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                {recientes.map((r, i) => (
+                  <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', background: '#f5f0eb', border: '1px solid #e0d8d0', borderLeft: '3px solid #34d399', borderRadius: '3px', padding: '0.6rem 0.75rem', flexWrap: 'wrap' }}>
+                    <div style={{ fontSize: '0.82rem', color: '#4a4038' }}>
+                      <div style={{ fontWeight: 600, color: '#1a1612' }}>{r.companyero?.nombre} {r.companyero?.apellidos} <span style={{ color: '#8a8070', fontWeight: 400 }}>chapa {r.companyero?.chapa}</span></div>
+                      <div style={{ fontSize: '0.75rem', color: '#8a8070', marginTop: '0.2rem' }}>
+                        Día: <strong style={{ color: '#c4a520' }}>{r.dia?.split('-').reverse().join('/')}</strong> · {new Date(r.fecha).toLocaleDateString('es-ES', { day: '2-digit', month: 'short' })}
+                      </div>
+                    </div>
+                    {r.companyero?.telefono && (
+                      <a href={`https://wa.me/34${r.companyero.telefono.replace(/\s/g, '')}`} target="_blank" rel="noopener noreferrer"
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: '#25D366', color: '#fff', padding: '6px 12px', borderRadius: '6px', textDecoration: 'none', fontWeight: 600, fontSize: '0.82rem', whiteSpace: 'nowrap', flexShrink: 0 }}>
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" width="16" height="16" style={{ verticalAlign: 'middle' }} />
+                        WhatsApp
+                      </a>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
         <div className="meses-grid">
           {Array.from({ length: 12 }, (_, i) => i).map(offset => {
             const ahora = new Date()

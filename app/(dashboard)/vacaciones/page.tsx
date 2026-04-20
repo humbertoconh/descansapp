@@ -414,10 +414,13 @@ function VacacionesContent() {
       p_ofrecido_ventana_desde: ofVentDesde, p_ofrecido_ventana_hasta: ofVentHasta,
       p_num_dias: numD, p_flexible: esFlexible,
     })
-    const { data: miPerfil } = await supabase.from('profiles').select('nombre, apellidos, chapa').eq('id', miId).single()
+    const { data: miPerfil } = await supabase.from('profiles').select('nombre, apellidos, chapa, telefono').eq('id', miId).single()
+    const { data: perfilSolicitante } = await supabase.from('profiles').select('nombre, apellidos, telefono').eq('id', modalAceptar.user_id).single()
     if (miPerfil) {
       const loDaA = descripcionLado(modalAceptar, 'ofrecido')
       const loRecibeA = esFlexible ? `${numD} días entre el ${fmt(ofVentDesde || '')} y el ${fmt(ofVentHasta || '')}` : `${fmt(ofDesde || '')} → ${fmt(ofHasta || '')}`
+      const waMio = miPerfil.telefono ? `<br><br>Contacta con tu compañero:<br>${waBtn(miPerfil.telefono, `${miPerfil.nombre} ${miPerfil.apellidos}`)}` : ''
+      const waSol = perfilSolicitante?.telefono ? `<br><br>Contacta con tu compañero:<br>${waBtn(perfilSolicitante.telefono, `${perfilSolicitante.nombre} ${perfilSolicitante.apellidos}`)}` : ''
       await supabase.from('notificaciones').insert({
         user_id: modalAceptar.user_id, tipo: 'aceptacion',
         titulo: '🏖️ Alguien acepta tu intercambio de vacaciones',
@@ -425,9 +428,13 @@ function VacacionesContent() {
         leida: false,
       })
       const { data: emailA } = await supabase.rpc('get_user_email', { p_user_id: modalAceptar.user_id })
+      const { data: emailMio } = await supabase.rpc('get_user_email', { p_user_id: miId })
       if (emailA) await enviarEmail(emailA, '✅ Alguien acepta tu intercambio de vacaciones - DescansApp',
         templateNotificacion('¡Alguien acepta tu intercambio!',
-          `<strong>${miPerfil.nombre} ${miPerfil.apellidos}</strong> (chapa ${miPerfil.chapa}) acepta el intercambio contigo.<br><br>Tú das: <strong>${loDaA}</strong><br>Tú recibes: <strong>${loRecibeA}</strong><br><br>Entra en DescansApp en la sección Vacaciones para confirmar el intercambio.`))
+          `<strong>${miPerfil.nombre} ${miPerfil.apellidos}</strong> (chapa ${miPerfil.chapa}) acepta el intercambio contigo.<br><br>Tú das: <strong>${loDaA}</strong><br>Tú recibes: <strong>${loRecibeA}</strong><br><br>Entra en DescansApp en la sección Vacaciones para confirmar el intercambio.${waMio}`))
+      if (emailMio) await enviarEmail(emailMio, '✅ Has aceptado un intercambio de vacaciones - DescansApp',
+        templateNotificacion('Has aceptado un intercambio',
+          `Has aceptado el intercambio con <strong>${perfilSolicitante?.nombre} ${perfilSolicitante?.apellidos}</strong>.<br><br>Tú das: <strong>${loRecibeA}</strong><br>Tú recibes: <strong>${loDaA}</strong><br><br>Espera a que tu compañero confirme el intercambio.${waSol}`))
     }
     await cargar(); setModalAceptar(null); setModalDetalle(null); resetAceptar(); setAceptando(false)
   }

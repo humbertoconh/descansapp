@@ -24,6 +24,14 @@ const ACCION_COLOR: Record<string, string> = {
   usuario_registrado: '#60a5fa',
   usuario_aprobado: '#34d399',
   usuario_eliminado: '#f87171',
+  vac_solicitud_creada: '#60a5fa',
+  vac_solicitud_cancelada: '#f87171',
+  vac_intercambio_aceptado: '#fb923c',
+  vac_intercambio_confirmado: '#34d399',
+  vac_cadena_detectada: '#a78bfa',
+  vac_cadena_creada: '#a78bfa',
+  vac_cadena_confirmada: '#34d399',
+  vac_cadena_cancelada: '#f87171',
 }
 
 const ACCION_LABEL: Record<string, string> = {
@@ -38,6 +46,14 @@ const ACCION_LABEL: Record<string, string> = {
   usuario_registrado: 'Usuario registrado',
   usuario_aprobado: 'Usuario aprobado',
   usuario_eliminado: 'Usuario eliminado',
+  vac_solicitud_creada: 'VAC · Solicitud creada',
+  vac_solicitud_cancelada: 'VAC · Solicitud cancelada',
+  vac_intercambio_aceptado: 'VAC · Intercambio aceptado',
+  vac_intercambio_confirmado: 'VAC · Intercambio confirmado',
+  vac_cadena_detectada: 'VAC · En cadena',
+  vac_cadena_creada: 'VAC · Cadena detectada',
+  vac_cadena_confirmada: 'VAC · Cadena confirmada',
+  vac_cadena_cancelada: 'VAC · Cadena cancelada',
 }
 
 const GRUPOS = [

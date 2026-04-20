@@ -196,6 +196,8 @@ function VacacionesContent() {
   const [eliminando, setEliminando] = useState<string | null>(null)
   const [confirmando, setConfirmando] = useState<string | null>(null)
   const [confirmandoCadena, setConfirmandoCadena] = useState<string | null>(null)
+  const [recientes, setRecientes] = useState<any[]>([])
+  const [recientesAbierto, setRecientesAbierto] = useState(false)
 
   const cargar = async () => {
     const { data: { user } } = await supabase.auth.getUser()
@@ -235,6 +237,44 @@ function VacacionesContent() {
       .or(`usuario1_id.eq.${user.id},usuario2_id.eq.${user.id},usuario3_id.eq.${user.id},usuario4_id.eq.${user.id}`)
       .eq('estado', 'pendiente')
     setCadenas(cads || [])
+    // Intercambios recientes (últimos 10 días)
+    const hace10 = new Date()
+    hace10.setDate(hace10.getDate() - 10)
+    const { data: solsConf } = await supabase
+      .from('vacaciones_solicitudes')
+      .select('*, profiles(nombre, apellidos, chapa)')
+      .eq('user_id', user.id)
+      .eq('estado', 'confirmada')
+      .gte('updated_at', hace10.toISOString())
+      .order('updated_at', { ascending: false })
+    const recList: any[] = []
+    for (const s of solsConf || []) {
+      const { data: acept } = await supabase.from('vacaciones_aceptaciones').select('*, profiles(nombre, apellidos, chapa, telefono)').eq('solicitud_id', s.id).single()
+      if (acept) {
+        const desc = s.flexible_ofrecido
+          ? `${s.num_dias} días (flexible)`
+          : `${s.ofrecido_desde?.split('-').reverse().join('/')} → ${s.ofrecido_hasta?.split('-').reverse().join('/')}`
+        recList.push({ companyero: acept.profiles, desc, fecha: s.updated_at, tipo: 'solicitante' })
+      }
+    }
+    // También como aceptante
+    const { data: aceConf } = await supabase
+      .from('vacaciones_aceptaciones')
+      .select('*, solicitudes:solicitud_id(estado, user_id, ofrecido_desde, ofrecido_hasta, flexible_ofrecido, num_dias, profiles(nombre, apellidos, chapa, telefono))')
+      .eq('aceptante_id', user.id)
+      .gte('created_at', hace10.toISOString())
+      .order('created_at', { ascending: false })
+    for (const a of aceConf || []) {
+      const sol = (a as any).solicitudes
+      if (sol?.estado === 'confirmada' && sol.user_id !== user.id) {
+        const desc = sol.flexible_ofrecido
+          ? `${sol.num_dias} días (flexible)`
+          : `${sol.ofrecido_desde?.split('-').reverse().join('/')} → ${sol.ofrecido_hasta?.split('-').reverse().join('/')}`
+        recList.push({ companyero: sol.profiles, desc, fecha: a.created_at, tipo: 'aceptante' })
+      }
+    }
+    recList.sort((a: any, b: any) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime())
+    setRecientes(recList.slice(0, 10))
     setLoading(false)
   }
 
@@ -684,6 +724,38 @@ function VacacionesContent() {
             </div>
           </div>
         </div>
+
+        {/* INTERCAMBIOS RECIENTES */}
+        {recientes.length > 0 && (
+          <div style={{ marginBottom: '1.5rem' }}>
+            <button onClick={() => setRecientesAbierto(!recientesAbierto)}
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'Bebas Neue, sans-serif', fontSize: '1rem', letterSpacing: '2px', color: '#c4a520', padding: '0.5rem 0' }}>
+              <span>📋 INTERCAMBIOS RECIENTES ({recientes.length})</span>
+              <span style={{ fontSize: '0.8rem', color: '#8a8070' }}>{recientesAbierto ? '▲ CERRAR' : '▼ VER'}</span>
+            </button>
+            {recientesAbierto && (
+              <div style={{ background: '#fff', border: '1px solid #e0d8d0', borderRadius: '4px', padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                {recientes.map((r, i) => (
+                  <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', background: '#f5f0eb', border: '1px solid #e0d8d0', borderLeft: '3px solid #34d399', borderRadius: '3px', padding: '0.6rem 0.75rem', flexWrap: 'wrap' }}>
+                    <div style={{ fontSize: '0.82rem', color: '#4a4038' }}>
+                      <div style={{ fontWeight: 600, color: '#1a1612' }}>{r.companyero?.nombre} {r.companyero?.apellidos} <span style={{ color: '#8a8070', fontWeight: 400 }}>chapa {r.companyero?.chapa}</span></div>
+                      <div style={{ fontSize: '0.75rem', color: '#8a8070', marginTop: '0.2rem' }}>
+                        {r.desc} · {new Date(r.fecha).toLocaleDateString('es-ES', { day: '2-digit', month: 'short' })}
+                      </div>
+                    </div>
+                    {r.companyero?.telefono && (
+                      <a href={`https://wa.me/34${r.companyero.telefono.replace(/\s/g, '')}`} target="_blank" rel="noopener noreferrer"
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: '#25D366', color: '#fff', padding: '6px 12px', borderRadius: '6px', textDecoration: 'none', fontWeight: 600, fontSize: '0.82rem', whiteSpace: 'nowrap', flexShrink: 0 }}>
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" width="16" height="16" style={{ verticalAlign: 'middle' }} />
+                        WhatsApp
+                      </a>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* MIS SOLICITUDES + CADENAS */}
         <div className="mis-sols">

@@ -129,19 +129,31 @@ export default function AdminUsuariosPage() {
 
   const eliminarUsuario = async (usuario: Profile) => {
     setAccionando(usuario.id)
-    const { data: sols } = await supabase.from('solicitudes').select('id').eq('solicitante_id', usuario.id)
-    if (sols && sols.length > 0) {
-      const ids = sols.map(s => s.id)
-      await supabase.from('aceptaciones').delete().in('solicitud_id', ids)
-      await supabase.from('dias_ofrecidos').delete().in('solicitud_id', ids)
-      await supabase.from('solicitudes').delete().in('id', ids)
+    try {
+      // Limpiar solicitudes de descansos
+      const { data: sols } = await supabase.from('solicitudes').select('id').eq('solicitante_id', usuario.id)
+      if (sols && sols.length > 0) {
+        const ids = sols.map((s: any) => s.id)
+        await supabase.from('aceptaciones').delete().in('solicitud_id', ids)
+        await supabase.from('dias_ofrecidos').delete().in('solicitud_id', ids)
+        await supabase.from('solicitudes').delete().in('id', ids)
+      }
+      // Limpiar vacaciones
+      const { data: vacSols } = await supabase.from('vacaciones_solicitudes').select('id').eq('user_id', usuario.id)
+      if (vacSols && vacSols.length > 0) {
+        const vids = vacSols.map((s: any) => s.id)
+        await supabase.from('vacaciones_aceptaciones').delete().in('solicitud_id', vids)
+        await supabase.from('vacaciones_solicitudes').delete().in('id', vids)
+      }
+      await supabase.from('lista_espera').delete().eq('user_id', usuario.id)
+      await supabase.from('dias_sueltos').delete().eq('user_id', usuario.id)
+      await supabase.from('notificaciones').delete().eq('user_id', usuario.id)
+      await supabase.from('dias_sueltos').update({ asignado_a: null }).eq('asignado_a', usuario.id)
+      await supabase.from('profiles').delete().eq('id', usuario.id)
+      await supabase.rpc('eliminar_usuario_auth', { p_user_id: usuario.id })
+    } catch (err) {
+      console.error('Error eliminando usuario:', err)
     }
-    await supabase.from('lista_espera').delete().eq('user_id', usuario.id)
-    await supabase.from('dias_sueltos').delete().eq('user_id', usuario.id)
-    await supabase.from('notificaciones').delete().eq('user_id', usuario.id)
-    await supabase.from('dias_sueltos').update({ asignado_a: null }).eq('asignado_a', usuario.id)
-    await supabase.from('profiles').delete().eq('id', usuario.id)
-    try { await supabase.rpc('eliminar_usuario_auth', { p_user_id: usuario.id }) } catch {}
     setConfirmarEliminar(null)
     await fetchUsuarios()
     setAccionando(null)

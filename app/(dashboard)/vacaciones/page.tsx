@@ -419,6 +419,59 @@ function VacacionesContent() {
       num_dias: numDias, flexible_ofrecido: ofrecidoFlexible, flexible_buscado: buscadoFlexible,
     })
     await cargar()
+    // Buscar si el trigger detectó una cadena nueva con esta solicitud
+    // Esperar un momento para que el trigger de Supabase se ejecute
+    await new Promise(r => setTimeout(r, 1500))
+    const { data: cadenasNuevas } = await supabase
+      .from('vacaciones_cadenas')
+      .select(`
+        *,
+        p1:usuario1_id(nombre, apellidos, chapa),
+        p2:usuario2_id(nombre, apellidos, chapa),
+        p3:usuario3_id(nombre, apellidos, chapa),
+        p4:usuario4_id(nombre, apellidos, chapa),
+        s1:solicitud1_id(ofrecido_desde, ofrecido_hasta, flexible_ofrecido, ofrecido_ventana_desde, ofrecido_ventana_hasta, num_dias),
+        s2:solicitud2_id(ofrecido_desde, ofrecido_hasta, flexible_ofrecido, ofrecido_ventana_desde, ofrecido_ventana_hasta, num_dias),
+        s3:solicitud3_id(ofrecido_desde, ofrecido_hasta, flexible_ofrecido, ofrecido_ventana_desde, ofrecido_ventana_hasta, num_dias),
+        s4:solicitud4_id(ofrecido_desde, ofrecido_hasta, flexible_ofrecido, ofrecido_ventana_desde, ofrecido_ventana_hasta, num_dias)
+      `)
+      .or(`usuario1_id.eq.${miId},usuario2_id.eq.${miId},usuario3_id.eq.${miId},usuario4_id.eq.${miId}`)
+      .eq('estado', 'pendiente')
+      .gte('created_at', new Date(Date.now() - 10000).toISOString()) // cadenas creadas en los últimos 10 segundos
+    for (const cadena of cadenasNuevas || []) {
+      const uids = [cadena.usuario1_id, cadena.usuario2_id, cadena.usuario3_id, cadena.usuario4_id].filter(Boolean)
+      const perfiles = [cadena.p1, cadena.p2, cadena.p3, cadena.p4].filter(Boolean)
+      const sols = [cadena.s1, cadena.s2, cadena.s3, cadena.s4].filter(Boolean)
+      for (let i = 0; i < uids.length; i++) {
+        const uid = uids[i]
+        const perfil = perfiles[i]
+        const sol = sols[i]
+        const descDa = sol ? (sol.flexible_ofrecido
+          ? `${sol.num_dias} días (flexible entre ${fmt(sol.ofrecido_ventana_desde)} y ${fmt(sol.ofrecido_ventana_hasta)})`
+          : `${fmt(sol.ofrecido_desde)} → ${fmt(sol.ofrecido_hasta)}`) : '—'
+        const otrosNombres = perfiles.filter((_, j) => j !== i).map(p => `${p?.nombre} ${p?.apellidos}`).join(', ')
+        // Notificación campana
+        await supabase.from('notificaciones').insert({
+          user_id: uid, tipo: 'cadena',
+          titulo: `🔗 ¡Cadena de vacaciones de ${cadena.tipo} detectada!`,
+          mensaje: `Se ha encontrado una cadena de ${cadena.tipo} participantes. Tú das: ${descDa}. Participantes: ${otrosNombres}. Entra en Vacaciones para confirmar tu parte.`,
+          leida: false,
+        })
+        // Email sin WhatsApp
+        const { data: emailP } = await supabase.rpc('get_user_email', { p_user_id: uid })
+        if (emailP) {
+          await enviarEmail(emailP,
+            `🔗 ¡Cadena de vacaciones de ${cadena.tipo} detectada! - DescansApp`,
+            templateNotificacion(`¡Cadena de vacaciones de ${cadena.tipo} encontrada!`,
+              `Se ha detectado automáticamente una cadena de intercambio de vacaciones entre ${cadena.tipo} compañeros.<br><br>
+              Tú das: <strong>${descDa}</strong><br>
+              Participantes: <strong>${otrosNombres}</strong><br><br>
+              Tienes <strong>5 días</strong> para confirmar tu parte. Entra en DescansApp → Vacaciones → <strong>"Mis solicitudes"</strong> y pulsa <strong>"✓ CONFIRMAR MI PARTE"</strong>.<br><br>
+              Si no confirman todos en 5 días, la cadena se cancelará automáticamente.`))
+        }
+      }
+    }
+    await cargar()
     setModalNueva(false)
     resetForm()
     setGuardando(false)

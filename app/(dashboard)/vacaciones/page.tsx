@@ -273,6 +273,26 @@ function VacacionesContent() {
         recList.push({ companyero: sol.profiles, desc, fecha: a.created_at, tipo: 'aceptante' })
       }
     }
+    // También como participante en cadenas confirmadas
+    const { data: cadenasConf } = await supabase
+      .from('vacaciones_cadenas')
+      .select('*, p1:usuario1_id(nombre, apellidos, chapa, telefono), p2:usuario2_id(nombre, apellidos, chapa, telefono), p3:usuario3_id(nombre, apellidos, chapa, telefono), p4:usuario4_id(nombre, apellidos, chapa, telefono)')
+      .or(`usuario1_id.eq.${user.id},usuario2_id.eq.${user.id},usuario3_id.eq.${user.id},usuario4_id.eq.${user.id}`)
+      .eq('estado', 'confirmada')
+      .gte('updated_at', hace10.toISOString())
+      .order('updated_at', { ascending: false })
+    for (const c of cadenasConf || []) {
+      // Añadir cada compañero de la cadena (excepto yo)
+      const participantes = [
+        { uid: c.usuario1_id, perfil: c.p1 },
+        { uid: c.usuario2_id, perfil: c.p2 },
+        { uid: c.usuario3_id, perfil: c.p3 },
+        c.usuario4_id ? { uid: c.usuario4_id, perfil: c.p4 } : null,
+      ].filter((p): p is { uid: string, perfil: any } => p !== null && p.uid !== user.id)
+      for (const p of participantes) {
+        recList.push({ companyero: p.perfil, desc: `Cadena de ${c.tipo} participantes`, fecha: c.updated_at, tipo: 'cadena' })
+      }
+    }
     recList.sort((a: any, b: any) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime())
     setRecientes(recList.slice(0, 10))
     setLoading(false)

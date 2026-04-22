@@ -77,7 +77,7 @@ function CalendarioContent() {
       .in('estado', ['abierta', 'esperando_confirmacion'])
       .gte('dia_pedido', new Date().toISOString().split('T')[0])
     setSolicitudes(sols || [])
-    const { data: lista } = await supabase.from('lista_espera').select('*, profiles(nombre, apellidos)').in('user_id', ids).gte('dia_pedido', new Date().toISOString().split('T')[0])
+    const { data: lista } = await supabase.from('lista_espera').select('*, profiles(nombre, apellidos)').in('user_id', ids).gte('dia_pedido', new Date().toISOString().split('T')[0]).order('created_at', { ascending: true })
     setListaEspera(lista || [])
     const { data: acepts } = await supabase.from('aceptaciones').select('*, profiles(nombre, apellidos), dias_ofrecidos(fecha)').in('solicitud_id', (sols || []).map((s: any) => s.id))
     setAceptaciones(acepts || [])

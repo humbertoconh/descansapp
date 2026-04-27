@@ -1130,7 +1130,7 @@ function VacacionesContent() {
                     : buscadoDesde && buscadoHasta ? <InfoDiasAuto dias={diasEntre(buscadoDesde, buscadoHasta)} texto="Ofrecerás" /> : null}
                   <DatePicker label="Ventana desde" value={ofrecidoVentanaDesde} abreHacia="abajo" onChange={setOfrecidoVentanaDesde} minDate={limite7dias} />
                   <DatePicker label="Ventana hasta" value={ofrecidoVentanaHasta} abreHacia="abajo" onChange={setOfrecidoVentanaHasta} mesInicial={mesDesdeVentanaOfrecido} minDate={ofrecidoVentanaDesde ? parseISO(ofrecidoVentanaDesde) : limite7dias} />
-                  {ofrecidoVentanaDesde && ofrecidoVentanaHasta && ofrecidoVentanaDesde <= ofrecidoVentanaHasta && <div className="ventana-aviso">💡 {numDiasOfrecido} días a elegir dentro de esa ventana</div>}
+                  {ofrecidoVentanaDesde && ofrecidoVentanaHasta && ofrecidoVentanaDesde <= ofrecidoVentanaHasta && <div className="ventana-aviso">💡 {diasEntre(ofrecidoVentanaDesde, ofrecidoVentanaHasta)} días de ventana disponibles</div>}
                 </>
               ) : (
                 <>
@@ -1149,7 +1149,7 @@ function VacacionesContent() {
                     : ofrecidoDesde && ofrecidoHasta ? <InfoDiasAuto dias={diasEntre(ofrecidoDesde, ofrecidoHasta)} texto="Buscarás" /> : null}
                   <DatePicker label="Ventana desde" value={buscadoVentanaDesde} abreHacia="arriba" onChange={setBuscadoVentanaDesde} minDate={limite7dias} />
                   <DatePicker label="Ventana hasta" value={buscadoVentanaHasta} abreHacia="arriba" onChange={setBuscadoVentanaHasta} mesInicial={mesDesdeVentanaBuscado} minDate={buscadoVentanaDesde ? parseISO(buscadoVentanaDesde) : limite7dias} />
-                  {buscadoVentanaDesde && buscadoVentanaHasta && buscadoVentanaDesde <= buscadoVentanaHasta && <div className="ventana-aviso">💡 {numDiasBuscado} días a elegir dentro de esa ventana</div>}
+                  {buscadoVentanaDesde && buscadoVentanaHasta && buscadoVentanaDesde <= buscadoVentanaHasta && <div className="ventana-aviso">💡 {diasEntre(buscadoVentanaDesde, buscadoVentanaHasta)} días de ventana disponibles</div>}
                 </>
               ) : (
                 <>

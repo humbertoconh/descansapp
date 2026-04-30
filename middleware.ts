@@ -1,9 +1,50 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
-export async function middleware(request: NextRequest) {
-  let supabaseResponse = NextResponse.next({ request })
+// Rate limiting: max 60 peticiones por IP en 60 segundos
+const rateMap = new Map<string, { count: number; ts: number }>()
+const RATE_LIMIT = 60
+const RATE_WINDOW = 60_000 // 1 minuto en ms
 
+function checkRateLimit(ip: string): boolean {
+  const now = Date.now()
+  const entry = rateMap.get(ip)
+  if (!entry || now - entry.ts > RATE_WINDOW) {
+    rateMap.set(ip, { count: 1, ts: now })
+    return true
+  }
+  if (entry.count >= RATE_LIMIT) return false
+  entry.count++
+  return true
+}
+
+export async function middleware(request: NextRequest) {
+  // Obtener IP real
+  const ip =
+    request.headers.get('x-forwarded-for')?.split(',')[0].trim() ||
+    request.headers.get('x-real-ip') ||
+    '127.0.0.1'
+
+  // Aplicar rate limiting solo a rutas de API y auth
+  const esRutaSensible =
+    request.nextUrl.pathname.startsWith('/api/') ||
+    request.nextUrl.pathname.startsWith('/login') ||
+    request.nextUrl.pathname.startsWith('/registro')
+
+  if (esRutaSensible && !checkRateLimit(ip)) {
+    return new NextResponse(
+      JSON.stringify({ error: 'Demasiadas peticiones. Espera un momento.' }),
+      {
+        status: 429,
+        headers: {
+          'Content-Type': 'application/json',
+          'Retry-After': '60',
+        },
+      }
+    )
+  }
+
+  let supabaseResponse = NextResponse.next({ request })
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -27,8 +68,12 @@ export async function middleware(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser()
 
-  const isAuthRoute = request.nextUrl.pathname.startsWith('/login') ||
-    request.nextUrl.pathname.startsWith('/registro') || request.nextUrl.pathname.startsWith('/reset-password') || request.nextUrl.pathname.startsWith('/update-password') || request.nextUrl.pathname.startsWith('/privacidad')
+  const isAuthRoute =
+    request.nextUrl.pathname.startsWith('/login') ||
+    request.nextUrl.pathname.startsWith('/registro') ||
+    request.nextUrl.pathname.startsWith('/reset-password') ||
+    request.nextUrl.pathname.startsWith('/update-password') ||
+    request.nextUrl.pathname.startsWith('/privacidad')
 
   if (!user && !isAuthRoute) {
     const url = request.nextUrl.clone()

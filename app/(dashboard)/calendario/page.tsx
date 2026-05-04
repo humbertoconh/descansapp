@@ -339,11 +339,32 @@ if (sueltoExistente) {
     setModalDia(null)
   }
 const soltarDia = async (fecha: string) => {
+    // VALIDACIÓN: no puedes soltar un día en el que estás en lista de espera
+    const enListaEspera = listaEspera.find(l => l.dia_pedido === fecha && l.user_id === miId)
+    if (enListaEspera) {
+      setMensajeError('No puedes soltar este día porque estás en su lista de espera. Quítate de la lista primero.')
+      alert('No puedes soltar este día porque estás en su lista de espera. Quítate de la lista primero.')
+      return
+    }
+    // VALIDACIÓN: no puedes soltar un día que ya soltaste
+    const yaSoltado = diasSueltos.find(d => {
+      const fechaDB = d.fecha?.split('T')[0]
+      return fechaDB === fecha && d.user_id === miId
+    })
+    if (yaSoltado) {
+      alert('Ya has soltado este día anteriormente.')
+      return
+    }
     setSoltando(true)
-    const { data } = await supabase.rpc('soltar_dia', {
+    const { data, error } = await supabase.rpc('soltar_dia', {
       p_user_id: miId,
       p_fecha: fecha,
     })
+    if (error) {
+      alert('Error: ' + error.message)
+      setSoltando(false)
+      return
+    }
     // Enviar email al asignado si hay alguien en lista de espera
     const { data: suelto } = await supabase.from('dias_sueltos').select('asignado_a, fecha').eq('user_id', miId).eq('fecha', fecha).single()
     if (suelto?.asignado_a) {

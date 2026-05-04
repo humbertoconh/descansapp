@@ -166,6 +166,7 @@ function CalendarioContent() {
   })
 
   const abrirDia = (fecha: string) => {
+    setMensajeError('')
     setModalDia({ fecha, quieren: diasPedidos[fecha] || [], ofrecen: diasOfrecidosMap[fecha] || [] })
   }
   const buscarCadenas = async () => {
@@ -327,6 +328,7 @@ if (sueltoExistente) {
 }
 
       await cargar()
+      setMensajeError('')
       setModalDia(null)
     } finally {
       setApuntando(false)
@@ -336,13 +338,13 @@ if (sueltoExistente) {
   const quitarseListaEspera = async (fecha: string) => {
     await supabase.from('lista_espera').delete().eq('user_id', miId).eq('dia_pedido', fecha)
     await cargar()
+    setMensajeError('')
     setModalDia(null)
   }
 const soltarDia = async (fecha: string) => {
     // VALIDACIÓN: no puedes soltar un día en el que estás en lista de espera
     const enListaEspera = listaEspera.find(l => l.dia_pedido === fecha && l.user_id === miId)
     if (enListaEspera) {
-      setMensajeError('No puedes soltar este día porque estás en su lista de espera. Quítate de la lista primero.')
       alert('No puedes soltar este día porque estás en su lista de espera. Quítate de la lista primero.')
       return
     }
@@ -687,7 +689,7 @@ return (
         </div>
       </div>
 {modalDia && (
-        <div className="overlay" onClick={() => setModalDia(null)}>
+        <div className="overlay" onClick={() => { setMensajeError(''); setModalDia(null) }}>
           <div className="modal" onClick={e => e.stopPropagation()}>
             <h3>📅 {fmt(modalDia.fecha)}</h3>
             {FESTIVOS_2026.includes(modalDia.fecha) && (
@@ -799,10 +801,10 @@ return (
             })()}
             <div className="modal-btns">
               <button className="btn-nueva" style={{ fontSize:'0.8rem', padding:'0.4rem 0.8rem' }}
-                onClick={() => { setDiaPedido(modalDia.fecha); setModalNueva(true); setModalDia(null) }}>
+                onClick={() => { setMensajeError(''); setDiaPedido(modalDia.fecha); setModalNueva(true); setModalDia(null) }}>
                 + PEDIR ESTE DÍA
               </button>
-              <button className="btn-gris" onClick={() => setModalDia(null)}>CERRAR</button>
+              <button className="btn-gris" onClick={() => { setMensajeError(''); setModalDia(null) }}>CERRAR</button>
             </div>
           </div>
         </div>

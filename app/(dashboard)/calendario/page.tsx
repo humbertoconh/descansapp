@@ -217,6 +217,20 @@ function CalendarioContent() {
     setDiaPedido('')
     setDiasOfrecidos([''])
     setGuardando(false)
+
+    // Detección automática de cadenas tras crear la solicitud
+    const { data: cadenasData } = await supabase.rpc('buscar_cadenas')
+    if (cadenasData && cadenasData.length > 0) {
+      const { data: perfil } = await supabase.from('profiles').select('is_admin').eq('id', miId).single()
+      const esAdminLocal = perfil?.is_admin
+      const cadenasParaMi = esAdminLocal
+        ? cadenasData
+        : cadenasData.filter((c: any) => c.usuario1_id === miId || c.usuario2_id === miId || c.usuario3_id === miId)
+      if (cadenasParaMi.length > 0) {
+        setCadenas(cadenasParaMi)
+        setModalCadenas(true)
+      }
+    }
   }
 
   const aceptarSolicitud = async (solicitud: Solicitud, diaOfrecidoId: string) => {

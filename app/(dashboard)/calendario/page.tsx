@@ -949,7 +949,7 @@ onClick={() => { setRecientesAbierto(false); abrirDia(r.dia) }}>
                       <div style={{ width:8, height:8, borderRadius:'50%', background: colorPorUsuario[s.solicitante_id], flexShrink:0 }} />
                       {s.profiles?.nombre} {s.profiles?.apellidos}
                       {s.solicitante_id === miId && <span className="tag tag-yo">YO</span>}
-                      {s.estado === 'esperando_confirmacion' && <span className="tag tag-espera">ESPERANDO</span>}
+                      {s.estado === 'esperando_confirmacion' && <span className="tag tag-espera">ACUERDO PENDIENTE</span>}
                       {s.estado === 'en_cadena' && <span className="tag" style={{ background: '#f5f0ff', color: '#5b21b6' }}>🔗 EN CADENA</span>}
                     </div>
                     <div className="sol-ofrece">Ofrece a cambio:</div>

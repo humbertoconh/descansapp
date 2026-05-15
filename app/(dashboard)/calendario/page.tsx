@@ -259,13 +259,17 @@ function CalendarioContent() {
             referencia_id: cadena.id, leida: false
           })
           // Construir bloque de participantes con WhatsApp (líneas separadas)
-          const otrosBloque = perfiles
+         const otrosBloque = perfiles
             .map((p: any, idx: number) => ({ p, idx }))
             .filter((x: any) => x.idx !== i)
-            .map((x: any) => {
+            .map((x: any, relIdx: number) => {
               const nombreCompleto = `${x.p.nombre} ${x.p.apellidos}`
               const wa = x.p.telefono ? `<br>${waBtn(x.p.telefono, nombreCompleto)}` : ''
-              return `<div style="margin:8px 0;padding:8px 0;border-top:1px solid #e0d8d0"><strong>${nombreCompleto}</strong> (chapa ${x.p.chapa})${wa}</div>`
+              const solOtro = sols[x.idx]
+              const solSiguienteOtro = sols[(x.idx + 1) % uids.length]
+              const queriaOtro = fmt(solOtro?.dia_pedido)
+              const dabaOtro = fmt(solSiguienteOtro?.dia_pedido)
+              return `<div style="margin:8px 0;padding:8px 0;border-top:1px solid #e0d8d0"><strong>${nombreCompleto}</strong> (chapa ${x.p.chapa})<br><span style="font-size:13px;color:#6a6058">Quería: ${queriaOtro} · Daba: ${dabaOtro}</span>${wa}</div>`
             }).join('')
           const { data: emailData } = await supabase.rpc('get_user_email', { p_user_id: uid })
           if (emailData) {
@@ -531,10 +535,14 @@ const soltarDia = async (fecha: string) => {
           const otrosBloque = perfiles
             .map((p: any, idx: number) => ({ p, idx }))
             .filter((x: any) => x.idx !== i)
-            .map((x: any) => {
+            .map((x: any, relIdx: number) => {
               const nombreCompleto = `${x.p.nombre} ${x.p.apellidos}`
               const wa = x.p.telefono ? `<br>${waBtn(x.p.telefono, nombreCompleto)}` : ''
-              return `<div style="margin:8px 0;padding:8px 0;border-top:1px solid #e0d8d0"><strong>${nombreCompleto}</strong> (chapa ${x.p.chapa})${wa}</div>`
+              const solOtro = sols[x.idx]
+              const solSiguienteOtro = sols[(x.idx + 1) % uids.length]
+              const queriaOtro = fmt(solOtro?.dia_pedido)
+              const dabaOtro = fmt(solSiguienteOtro?.dia_pedido)
+              return `<div style="margin:8px 0;padding:8px 0;border-top:1px solid #e0d8d0"><strong>${nombreCompleto}</strong> (chapa ${x.p.chapa})<br><span style="font-size:13px;color:#6a6058">Quería: ${queriaOtro} · Daba: ${dabaOtro}</span>${wa}</div>`
             }).join('')
           const { data: emailData } = await supabase.rpc('get_user_email', { p_user_id: uid })
           if (emailData) {

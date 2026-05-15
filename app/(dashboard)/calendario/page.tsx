@@ -220,6 +220,10 @@ function CalendarioContent() {
     if (!diaPedido) return
     const ofrecidos = diasOfrecidos.filter(d => d !== '')
     if (ofrecidos.length === 0) return
+    if (ofrecidos.includes(diaPedido)) {
+  alert('No puedes ofrecer el mismo día que pides.')
+  return
+}
     setGuardando(true)
     const { data: sol } = await supabase
       .from('solicitudes')

@@ -161,9 +161,16 @@ function CalendarioContent() {
     }
   }, [])
 
-  useEffect(() => {
+ useEffect(() => {
     if (diaParam && !loading) {
-      abrirDia(diaParam)
+      const tengoAlgoQueHacer = solicitudes.some(s =>
+        s.dia_pedido === diaParam &&
+        s.solicitante_id === miId &&
+        s.estado === 'esperando_confirmacion'
+      )
+      if (tengoAlgoQueHacer) {
+        abrirDia(diaParam)
+      }
       setDiaParam(null)
     }
   }, [diaParam, loading])

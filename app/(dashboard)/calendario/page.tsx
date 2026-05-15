@@ -120,7 +120,7 @@ function CalendarioContent() {
       .order('updated_at', { ascending: false })
     const { data: acepts_rec } = await supabase
       .from('aceptaciones')
-      .select('*, profiles(nombre, apellidos, chapa), solicitudes!inner(dia_pedido, solicitante_id, profiles(nombre, apellidos, chapa, telefono))')
+      .select('*, profiles(nombre, apellidos, chapa), solicitudes!inner(dia_pedido, estado, solicitante_id, profiles(nombre, apellidos, chapa, telefono))')
       .eq('aceptante_id', user.id)
       .gte('created_at', hace10.toISOString())
       .order('created_at', { ascending: false })
@@ -132,7 +132,8 @@ function CalendarioContent() {
     for (const a of acepts_rec || []) {
       const sol = (a as any).solicitudes
       if (sol && sol.solicitante_id !== user.id) {
-        recList.push({ tipo: 'aceptante', dia: sol.dia_pedido, companyero: sol.profiles, fecha: a.created_at })
+        const estadoSol = (a as any).solicitudes?.estado
+        recList.push({ tipo: estadoSol === 'completada' ? 'aceptante' : 'pendiente_otro', dia: sol.dia_pedido, companyero: sol.profiles, fecha: a.created_at })
       }
     }
     recList.sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime())
@@ -769,6 +770,7 @@ return (
                     <div style={{ fontSize: '0.82rem', color: '#4a4038' }}>
                       <div style={{ fontWeight: 600, color: '#1a1612' }}>
                         {r.tipo === 'pendiente' && <span style={{ color: '#f5c518', marginRight: '0.4rem' }}>🟡</span>}
+                        {r.tipo === 'pendiente_otro' && <span style={{ color: '#f5c518', marginRight: '0.4rem' }}>🟡</span>}
                         {r.tipo === 'solicitante' && <span style={{ color: '#34d399', marginRight: '0.4rem' }}>✅</span>}
                         {r.tipo === 'aceptante' && <span style={{ color: '#34d399', marginRight: '0.4rem' }}>✅</span>}
                         {r.companyero?.nombre} {r.companyero?.apellidos} <span style={{ color: '#8a8070', fontWeight: 400 }}>chapa {r.companyero?.chapa}</span>
@@ -776,6 +778,7 @@ return (
                       <div style={{ fontSize: '0.75rem', color: '#8a8070', marginTop: '0.2rem' }}>
                         Día: <strong style={{ color: '#c4a520' }}>{r.dia?.split('-').reverse().join('/')}</strong> · {new Date(r.fecha).toLocaleDateString('es-ES', { day: '2-digit', month: 'short' })}
                         {r.tipo === 'pendiente' && <span style={{ color: '#f5c518', marginLeft: '0.4rem', fontWeight: 600 }}>· Pendiente de confirmar</span>}
+                        {r.tipo === 'pendiente_otro' && <span style={{ color: '#f5c518', marginLeft: '0.4rem', fontWeight: 600 }}>· Esperando que confirme {r.companyero?.nombre}</span>}
                       </div>
                     </div>
                     {r.companyero?.telefono && (

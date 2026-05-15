@@ -3,6 +3,10 @@
     {
       "path": "/api/cron/recordatorio-cadenas",
       "schedule": "0 6 * * *"
+    },
+    {
+      "path": "/api/cron/cadenas-descansos",
+      "schedule": "0 6 * * *"
     }
   ]
 }

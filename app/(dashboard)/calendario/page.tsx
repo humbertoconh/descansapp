@@ -46,9 +46,8 @@ function CalendarioContent() {
   const [diaPedido, setDiaPedido] = useState('')
   const [diasOfrecidos, setDiasOfrecidos] = useState<string[]>([''])
   const [coincidencias, setCoincidencias] = useState<any[]>([])
-  const [cadenas, setCadenas] = useState<any[]>([])
-  const [modalCadenas, setModalCadenas] = useState(false)
-  const [buscandoCadenas, setBuscandoCadenas] = useState(false)
+  const [cadenasPendientes, setCadenasPendientes] = useState<any[]>([])
+  const [confirmandoCadena, setConfirmandoCadena] = useState<string | null>(null)
   const [esAdmin, setEsAdmin] = useState(false)
   const [guardando, setGuardando] = useState(false)
   const [modalAceptar, setModalAceptar] = useState<Solicitud | null>(null)
@@ -74,11 +73,34 @@ function CalendarioContent() {
       .from('solicitudes')
       .select('*, dias_ofrecidos(*), profiles(nombre, apellidos, chapa)')
       .in('solicitante_id', ids)
-      .in('estado', ['abierta', 'esperando_confirmacion'])
+      .in('estado', ['abierta', 'esperando_confirmacion', 'en_cadena'])
       .gte('dia_pedido', new Date().toISOString().split('T')[0])
     setSolicitudes(sols || [])
     const { data: lista } = await supabase.from('lista_espera').select('*, profiles(nombre, apellidos)').in('user_id', ids).gte('dia_pedido', new Date().toISOString().split('T')[0]).order('created_at', { ascending: true })
     setListaEspera(lista || [])
+    // Cargar cadenas pendientes donde participo
+    const { data: cads } = await supabase
+      .from('cadenas_intercambio')
+      .select(`
+        *,
+        p1:usuario1_id(nombre, apellidos, chapa, telefono),
+        p2:usuario2_id(nombre, apellidos, chapa, telefono),
+        p3:usuario3_id(nombre, apellidos, chapa, telefono),
+        p4:usuario4_id(nombre, apellidos, chapa, telefono),
+        s1:solicitud1_id(dia_pedido),
+        s2:solicitud2_id(dia_pedido),
+        s3:solicitud3_id(dia_pedido),
+        s4:solicitud4_id(dia_pedido)
+      `)
+     .eq('estado', 'pendiente')
+    const cadsParaMi = (cads || []).filter((c: any) => 
+      c.usuario1_id === user.id || 
+      c.usuario2_id === user.id || 
+      c.usuario3_id === user.id || 
+      c.usuario4_id === user.id
+    )
+    console.log('🔍 CADENAS:', cads, 'PARA MI:', cadsParaMi, 'MI ID:', user.id)
+    setCadenasPendientes(cadsParaMi)
     const { data: acepts } = await supabase.from('aceptaciones').select('*, profiles(nombre, apellidos), dias_ofrecidos(fecha)').in('solicitud_id', (sols || []).map((s: any) => s.id))
     setAceptaciones(acepts || [])
     const { data: sueltos, error: errorSueltos } = await supabase.from('dias_sueltos').select('id, user_id, fecha, estado, created_at, profiles!dias_sueltos_user_id_fkey(nombre, apellidos)').eq('estado', 'disponible')
@@ -127,6 +149,7 @@ function CalendarioContent() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'aceptaciones' }, () => cargar())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'lista_espera' }, () => cargar())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'dias_sueltos' }, () => cargar())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'cadenas_intercambio' }, () => cargar())
       .subscribe()
     return () => { supabase.removeChannel(channel) }
   }, [])
@@ -169,19 +192,6 @@ function CalendarioContent() {
     setMensajeError('')
     setModalDia({ fecha, quieren: diasPedidos[fecha] || [], ofrecen: diasOfrecidosMap[fecha] || [] })
   }
-  const buscarCadenas = async () => {
-    setBuscandoCadenas(true)
-    setModalCadenas(true)
-    const { data, error } = await supabase.rpc('buscar_cadenas')
-    if (error) { setBuscandoCadenas(false); return }
-    const { data: perfil } = await supabase.from('profiles').select('is_admin').eq('id', miId).single()
-    const esAdmin = perfil?.is_admin
-    const cadenasVisibles = esAdmin
-      ? (data || [])
-      : (data || []).filter((c: any) => c.usuario1_id === miId || c.usuario2_id === miId || c.usuario3_id === miId)
-    setCadenas(cadenasVisibles)
-    setBuscandoCadenas(false)
-  }
   const buscarCoincidencias = async (diaPedido: string, diasOfrece: string[]) => {
     if (!diaPedido || diasOfrece.filter(d => d).length === 0) {
       setCoincidencias([])
@@ -211,26 +221,75 @@ function CalendarioContent() {
       .select().single()
     if (sol) {
       await supabase.from('dias_ofrecidos').insert(ofrecidos.map(f => ({ solicitud_id: sol.id, fecha: f })))
+      // Detección automática de cadenas (la RPC bloquea las solicitudes y crea la cadena)
+      await supabase.rpc('detectar_cadenas_intercambio', { p_solicitud_id: sol.id })
+      // Comprobar si se acaba de crear una cadena que me incluya y notificar a los participantes
+      const { data: cadenaNueva } = await supabase
+        .from('cadenas_intercambio')
+        .select(`
+          *,
+          p1:usuario1_id(nombre, apellidos, chapa, telefono),
+          p2:usuario2_id(nombre, apellidos, chapa, telefono),
+          p3:usuario3_id(nombre, apellidos, chapa, telefono),
+          p4:usuario4_id(nombre, apellidos, chapa, telefono),
+          s1:solicitud1_id(dia_pedido),
+          s2:solicitud2_id(dia_pedido),
+          s3:solicitud3_id(dia_pedido),
+          s4:solicitud4_id(dia_pedido)
+        `)
+        .or(`solicitud1_id.eq.${sol.id},solicitud2_id.eq.${sol.id},solicitud3_id.eq.${sol.id},solicitud4_id.eq.${sol.id}`)
+        .eq('estado', 'pendiente')
+        .gte('created_at', new Date(Date.now() - 10000).toISOString())
+      for (const cadena of cadenaNueva || []) {
+        const uids = [cadena.usuario1_id, cadena.usuario2_id, cadena.usuario3_id, cadena.usuario4_id].filter(Boolean)
+        const perfiles = [cadena.p1, cadena.p2, cadena.p3, cadena.p4].filter(Boolean)
+        const sols = [cadena.s1, cadena.s2, cadena.s3, cadena.s4].filter(Boolean)
+        for (let i = 0; i < uids.length; i++) {
+          const uid = uids[i]
+          const otrosNombres = perfiles.filter((_: any, idx: number) => idx !== i).map((p: any) => `${p.nombre} ${p.apellidos}`).join(', ')
+          const yo = perfiles[i]
+          const miSol = sols[i]
+          const miSiguiente = sols[(i + 1) % uids.length]
+          const descDa = fmt(miSiguiente?.dia_pedido)
+          const descRecibe = fmt(miSol?.dia_pedido)
+          await supabase.from('notificaciones').insert({
+            user_id: uid, tipo: 'cadena',
+            titulo: `🔗 ¡Cadena de ${cadena.tipo} detectada!`,
+            mensaje: `Se ha encontrado una cadena de ${cadena.tipo} participantes. Tú das el ${descDa} y recibes el ${descRecibe}. Participantes: ${otrosNombres}. Entra en DescansApp para confirmar tu parte. Tienes 3 días para confirmar.`,
+            referencia_id: cadena.id, leida: false
+          })
+          // Construir bloque de participantes con WhatsApp (líneas separadas)
+          const otrosBloque = perfiles
+            .map((p: any, idx: number) => ({ p, idx }))
+            .filter((x: any) => x.idx !== i)
+            .map((x: any) => {
+              const nombreCompleto = `${x.p.nombre} ${x.p.apellidos}`
+              const wa = x.p.telefono ? `<br>${waBtn(x.p.telefono, nombreCompleto)}` : ''
+              return `<div style="margin:8px 0;padding:8px 0;border-top:1px solid #e0d8d0"><strong>${nombreCompleto}</strong> (chapa ${x.p.chapa})${wa}</div>`
+            }).join('')
+          const { data: emailData } = await supabase.rpc('get_user_email', { p_user_id: uid })
+          if (emailData) {
+            await enviarEmail(
+              emailData,
+              `🔗 ¡Cadena de ${cadena.tipo} detectada! - DescansApp`,
+              templateNotificacion(
+                `¡Cadena de ${cadena.tipo} detectada!`,
+                `Se ha detectado automáticamente una cadena de intercambio entre ${cadena.tipo} compañeros.<br><br>` +
+                `<strong>Tú das:</strong> ${descDa}<br>` +
+                `<strong>Tú recibes:</strong> ${descRecibe}<br><br>` +
+                `<strong>Otros participantes:</strong>${otrosBloque}<br>` +
+                `Entra en DescansApp para confirmar tu parte. Si no confirman todos en 3 días, la cadena se cancelará automáticamente.`
+              )
+            )
+          }
+        }
+      }
     }
     await cargar()
     setModalNueva(false)
     setDiaPedido('')
     setDiasOfrecidos([''])
     setGuardando(false)
-
-    // Detección automática de cadenas tras crear la solicitud
-    const { data: cadenasData } = await supabase.rpc('buscar_cadenas')
-    if (cadenasData && cadenasData.length > 0) {
-      const { data: perfil } = await supabase.from('profiles').select('is_admin').eq('id', miId).single()
-      const esAdminLocal = perfil?.is_admin
-      const cadenasParaMi = esAdminLocal
-        ? cadenasData
-        : cadenasData.filter((c: any) => c.usuario1_id === miId || c.usuario2_id === miId || c.usuario3_id === miId)
-      if (cadenasParaMi.length > 0) {
-        setCadenas(cadenasParaMi)
-        setModalCadenas(true)
-      }
-    }
   }
 
   const aceptarSolicitud = async (solicitud: Solicitud, diaOfrecidoId: string) => {
@@ -423,6 +482,83 @@ const soltarDia = async (fecha: string) => {
     setModalDia(null)
   }
 
+  const miPosicionEnCadena = (cadena: any) => {
+    if (cadena.usuario1_id === miId) return 1
+    if (cadena.usuario2_id === miId) return 2
+    if (cadena.usuario3_id === miId) return 3
+    if (cadena.usuario4_id === miId) return 4
+    return 0
+  }
+
+  const yoConfirmeEnCadena = (cadena: any) => {
+    const pos = miPosicionEnCadena(cadena)
+    if (pos === 1) return cadena.confirmado1
+    if (pos === 2) return cadena.confirmado2
+    if (pos === 3) return cadena.confirmado3
+    if (pos === 4) return cadena.confirmado4
+    return false
+  }
+
+  const diasParaExpirar = (cadena: any) => {
+    if (!cadena.expira_at) return 0
+    const diff = Math.ceil((new Date(cadena.expira_at).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+    return Math.max(0, diff)
+  }
+
+  const confirmarCadena = async (cadenaId: string, cadena: any) => {
+    setConfirmandoCadena(cadenaId)
+    try {
+      await supabase.rpc('confirmar_cadena_intercambio', { p_cadena_id: cadenaId, p_user_id: miId })
+      const { data: cadenaActualizada } = await supabase.from('cadenas_intercambio').select('*').eq('id', cadenaId).single()
+      if (cadenaActualizada?.estado === 'confirmada') {
+        // Notificar a todos los participantes que la cadena se ha completado
+        const uids = [cadena.usuario1_id, cadena.usuario2_id, cadena.usuario3_id, cadena.usuario4_id].filter(Boolean)
+        const perfiles = [cadena.p1, cadena.p2, cadena.p3, cadena.p4].filter(Boolean)
+        const sols = [cadena.s1, cadena.s2, cadena.s3, cadena.s4].filter(Boolean)
+        for (let i = 0; i < uids.length; i++) {
+          const uid = uids[i]
+          const miSol = sols[i]
+          const miSiguiente = sols[(i + 1) % uids.length]
+          const queriaDia = fmt(miSol?.dia_pedido)
+          const dabaDia = fmt(miSiguiente?.dia_pedido)
+          await supabase.from('notificaciones').insert({
+            user_id: uid, tipo: 'completado',
+            titulo: '✅ Cadena confirmada',
+            mensaje: `Has conseguido tu cambio en una cadena entre ${cadena.tipo} compañeros. Querías el ${queriaDia} y dabas el ${dabaDia}. Recuerda tramitar el cambio en la web del Cpe.`,
+            leida: false
+          })
+          // Construir bloque de participantes con WhatsApp (todos menos yo)
+          const otrosBloque = perfiles
+            .map((p: any, idx: number) => ({ p, idx }))
+            .filter((x: any) => x.idx !== i)
+            .map((x: any) => {
+              const nombreCompleto = `${x.p.nombre} ${x.p.apellidos}`
+              const wa = x.p.telefono ? `<br>${waBtn(x.p.telefono, nombreCompleto)}` : ''
+              return `<div style="margin:8px 0;padding:8px 0;border-top:1px solid #e0d8d0"><strong>${nombreCompleto}</strong> (chapa ${x.p.chapa})${wa}</div>`
+            }).join('')
+          const { data: emailData } = await supabase.rpc('get_user_email', { p_user_id: uid })
+          if (emailData) {
+            await enviarEmail(
+              emailData,
+              '✅ Cadena confirmada - DescansApp',
+              templateNotificacion(
+                '¡Cadena confirmada!',
+                `Has conseguido tu cambio en una cadena entre ${cadena.tipo} compañeros.<br><br>` +
+                `<strong>Querías:</strong> ${queriaDia}<br>` +
+                `<strong>Dabas:</strong> ${dabaDia}<br><br>` +
+                `<strong>Participantes:</strong>${otrosBloque}<br>` +
+                `Recuerda tramitar el cambio en la web del Cpe.`
+              )
+            )
+          }
+        }
+      }
+      await cargar()
+    } finally {
+      setConfirmandoCadena(null)
+    }
+  }
+
   if (loading) return (
     <div style={{ background:'#0f0f0f', minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center', color:'#f5c518', fontFamily:'sans-serif', fontSize:'1.5rem', letterSpacing:'3px' }}>
       CARGANDO...
@@ -585,7 +721,6 @@ return (
             <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
               <button className="btn-nueva" onClick={() => setModalNueva(true)}>+ NUEVA SOLICITUD</button>
               <button className="btn-nueva" style={{ background: '#fb923c' }} onClick={() => setModalSoltar(true)}>- SOLTAR DÍA</button>
-              <button className="btn-nueva" style={{ background: '#a78bfa' }} onClick={buscarCadenas}>🔗 BUSCAR CADENAS</button>
             </div>
             <div className="leyenda">
               <div className="leyenda-item">
@@ -642,6 +777,79 @@ return (
                 ))}
               </div>
             )}
+          </div>
+        )}
+        {/* CADENAS PENDIENTES DE CONFIRMACIÓN */}
+        {cadenasPendientes.length > 0 && (
+          <div style={{ marginBottom: '1.5rem' }}>
+            <div style={{ fontFamily: 'Bebas Neue, sans-serif', fontSize: '1rem', letterSpacing: '2px', color: '#a78bfa', padding: '0.5rem 0' }}>
+              🔗 CADENAS PENDIENTES DE CONFIRMACIÓN ({cadenasPendientes.length})
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              {cadenasPendientes.map(cadena => {
+                const yaConfirme = yoConfirmeEnCadena(cadena)
+                const dias = diasParaExpirar(cadena)
+                const participantes = [
+                  { uid: cadena.usuario1_id, perfil: cadena.p1, sol: cadena.s1, conf: cadena.confirmado1 },
+                  { uid: cadena.usuario2_id, perfil: cadena.p2, sol: cadena.s2, conf: cadena.confirmado2 },
+                  { uid: cadena.usuario3_id, perfil: cadena.p3, sol: cadena.s3, conf: cadena.confirmado3 },
+                  cadena.tipo === 4 ? { uid: cadena.usuario4_id, perfil: cadena.p4, sol: cadena.s4, conf: cadena.confirmado4 } : null,
+                ].filter(Boolean) as any[]
+                return (
+                  <div key={cadena.id} style={{ background: '#fff', border: '1px solid #a78bfa', borderLeft: '3px solid #a78bfa', borderRadius: '4px', padding: '0.85rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.6rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+                      <span style={{ fontFamily: 'Bebas Neue, sans-serif', fontSize: '0.9rem', letterSpacing: '2px', color: '#a78bfa' }}>
+                        🔗 CADENA DE {cadena.tipo} · {dias} {dias === 1 ? 'DÍA' : 'DÍAS'} PARA CONFIRMAR
+                      </span>
+                      {!yaConfirme && (
+                        <button
+                          disabled={confirmandoCadena === cadena.id}
+                          onClick={() => confirmarCadena(cadena.id, cadena)}
+                          style={{ background: '#a78bfa', color: '#0f0f0f', border: 'none', padding: '0.4rem 0.9rem', fontFamily: 'Bebas Neue, sans-serif', fontSize: '0.8rem', letterSpacing: '1px', cursor: 'pointer', borderRadius: '2px' }}>
+                          {confirmandoCadena === cadena.id ? 'CONFIRMANDO...' : '✓ CONFIRMAR MI PARTE'}
+                        </button>
+                      )}
+                      {yaConfirme && (
+                        <span style={{ fontSize: '0.78rem', color: '#16a34a', fontWeight: 600 }}>✓ Ya confirmaste tu parte</span>
+                      )}
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                      {participantes.map((p, i) => {
+                        const siguiente = participantes[(i + 1) % participantes.length]
+                        const esYo = p.uid === miId
+                        return (
+                          <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem', padding: '0.4rem 0.6rem', background: esYo ? '#f5f0ff' : '#f5f0eb', borderRadius: '3px', border: '1px solid #e0d8d0', fontSize: '0.82rem', color: '#4a4038' }}>
+                            <div style={{ flex: 1 }}>
+                              <strong style={{ color: '#1a1612' }}>{p.perfil?.nombre} {p.perfil?.apellidos}</strong>
+                              {esYo && <span style={{ color: '#a78bfa', fontWeight: 600, marginLeft: '0.4rem' }}>(YO)</span>}
+                              <span style={{ color: '#8a8070', marginLeft: '0.4rem' }}>chapa {p.perfil?.chapa}</span>
+                              <div style={{ fontSize: '0.75rem', color: '#6a6058', marginTop: '0.15rem' }}>
+                                Da el <strong style={{ color: '#c4a520' }}>{fmt(siguiente?.sol?.dia_pedido)}</strong> y recibe el <strong style={{ color: '#c4a520' }}>{fmt(p.sol?.dia_pedido)}</strong>
+                              </div>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexShrink: 0 }}>
+                              {!esYo && p.perfil?.telefono && (
+                                <a href={`https://wa.me/34${p.perfil.telefono.replace(/\s/g, '')}`} target="_blank" rel="noopener noreferrer"
+                                  style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: '#25D366', color: '#fff', padding: '4px 8px', borderRadius: '4px', textDecoration: 'none', fontWeight: 600, fontSize: '0.72rem', whiteSpace: 'nowrap' }}>
+                                  <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" width="12" height="12" style={{ verticalAlign: 'middle' }} />
+                                  WhatsApp
+                                </a>
+                              )}
+                              <div style={{ fontSize: '0.75rem', color: p.conf ? '#16a34a' : '#8a8070', fontWeight: 600, whiteSpace: 'nowrap' }}>
+                                {p.conf ? '✓ CONFIRMADO' : '⏳ PENDIENTE'}
+                              </div>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                    <div style={{ marginTop: '0.6rem', fontSize: '0.75rem', color: '#8a8070', background: '#f5f0eb', padding: '0.4rem 0.6rem', borderRadius: '3px' }}>
+                      ⚠️ Si no confirman todos en {dias} {dias === 1 ? 'día' : 'días'}, la cadena se cancelará automáticamente y los días volverán a estar disponibles.
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
           </div>
         )}
         <div className="meses-grid">
@@ -719,6 +927,7 @@ return (
                       {s.profiles?.nombre} {s.profiles?.apellidos}
                       {s.solicitante_id === miId && <span className="tag tag-yo">YO</span>}
                       {s.estado === 'esperando_confirmacion' && <span className="tag tag-espera">ESPERANDO</span>}
+                      {s.estado === 'en_cadena' && <span className="tag" style={{ background: '#f5f0ff', color: '#5b21b6' }}>🔗 EN CADENA</span>}
                     </div>
                     <div className="sol-ofrece">Ofrece a cambio:</div>
                     <div className="dias-chips">
@@ -846,84 +1055,6 @@ return (
           </div>
         </div>
       )}
-{modalCadenas && (
-        <div className="overlay" onClick={() => setModalCadenas(false)}>
-          <div className="modal" style={{ maxWidth: '600px' }} onClick={e => e.stopPropagation()}>
-            <h3>🔗 INTERCAMBIOS EN CADENA</h3>
-            {buscandoCadenas ? (
-              <p style={{ color: '#6a6058', fontSize: '0.85rem' }}>Buscando cadenas posibles...</p>
-            ) : cadenas.length === 0 ? (
-              <p style={{ color: '#6a6058', fontSize: '0.85rem', marginTop: '0.5rem' }}>No se han encontrado intercambios en cadena posibles con las solicitudes actuales.</p>
-            ) : (
-              <>
-                <p style={{ color: '#6a6058', fontSize: '0.82rem', marginBottom: '1rem' }}>
-                  Se han encontrado {cadenas.length} cadena(s) posible(s). Notifica a los participantes para que puedan confirmar.
-                </p>
-                {cadenas.map((c, i) => (
-                  <div key={i} className="solicitud-card" style={{ marginBottom: '1rem' }}>
-                    <div style={{ fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '1px', color: '#a78bfa', marginBottom: '0.75rem', fontWeight: 600 }}>
-                      Cadena #{i + 1}
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                      <div style={{ fontSize: '0.85rem', padding: '0.5rem', background: '#1a1612', borderRadius: '2px', borderLeft: '2px solid #f5c518' }}>
-                        <strong style={{ color: '#f5c518' }}>{c.usuario1_nombre}</strong> <span style={{ color: '#6a6058' }}>(chapa {c.usuario1_chapa})</span>
-                        <br /><span style={{ color: '#8a8070', fontSize: '0.78rem' }}>Da el <strong style={{ color: '#e8e0d4' }}>{fmt(c.dia_que_da1)}</strong> y recibe el <strong style={{ color: '#e8e0d4' }}>{fmt(c.dia_que_pide1)}</strong></span>
-                      </div>
-                      <div style={{ textAlign: 'center', color: '#a78bfa', fontSize: '0.8rem' }}>↕</div>
-                      <div style={{ fontSize: '0.85rem', padding: '0.5rem', background: '#1a1612', borderRadius: '2px', borderLeft: '2px solid #34d399' }}>
-                        <strong style={{ color: '#34d399' }}>{c.usuario2_nombre}</strong> <span style={{ color: '#6a6058' }}>(chapa {c.usuario2_chapa})</span>
-                        <br /><span style={{ color: '#8a8070', fontSize: '0.78rem' }}>Da el <strong style={{ color: '#e8e0d4' }}>{fmt(c.dia_que_da2)}</strong> y recibe el <strong style={{ color: '#e8e0d4' }}>{fmt(c.dia_que_pide2)}</strong></span>
-                      </div>
-                      <div style={{ textAlign: 'center', color: '#a78bfa', fontSize: '0.8rem' }}>↕</div>
-                      <div style={{ fontSize: '0.85rem', padding: '0.5rem', background: '#1a1612', borderRadius: '2px', borderLeft: '2px solid #fb923c' }}>
-                        <strong style={{ color: '#fb923c' }}>{c.usuario3_nombre}</strong> <span style={{ color: '#6a6058' }}>(chapa {c.usuario3_chapa})</span>
-                        <br /><span style={{ color: '#8a8070', fontSize: '0.78rem' }}>Da el <strong style={{ color: '#e8e0d4' }}>{fmt(c.dia_que_da3)}</strong> y recibe el <strong style={{ color: '#e8e0d4' }}>{fmt(c.dia_que_pide3)}</strong></span>
-                      </div>
-                    </div>
-                    <div className="modal-btns" style={{ marginTop: '0.75rem' }}>
-                    {(esAdmin || c.usuario1_id === miId || c.usuario2_id === miId || c.usuario3_id === miId) && (
-                      <button className="btn-amarillo" style={{ background: '#a78bfa', fontSize: '0.8rem' }}
-                        onClick={async () => {
-                          const { data: cadenaCreada } = await supabase.from('cadenas_intercambio').insert({
-                            solicitud1_id: c.solicitud1_id,
-                            solicitud2_id: c.solicitud2_id,
-                            solicitud3_id: c.solicitud3_id,
-                            usuario1_id: c.usuario1_id,
-                            usuario2_id: c.usuario2_id,
-                            usuario3_id: c.usuario3_id,
-                          }).select().single()
-                          if (cadenaCreada) {
-                            await supabase.from('notificaciones').insert([
-                              { user_id: c.usuario1_id, tipo: 'cadena', titulo: '🔗 Intercambio en cadena encontrado', mensaje: `Tú das el ${fmt(c.dia_que_da1)} y recibes el ${fmt(c.dia_que_pide1)}. Participantes: ${c.usuario2_nombre} y ${c.usuario3_nombre}. Confirma para completar.`, referencia_id: cadenaCreada.id },
-                              { user_id: c.usuario2_id, tipo: 'cadena', titulo: '🔗 Intercambio en cadena encontrado', mensaje: `Tú das el ${fmt(c.dia_que_da2)} y recibes el ${fmt(c.dia_que_pide2)}. Participantes: ${c.usuario1_nombre} y ${c.usuario3_nombre}. Confirma para completar.`, referencia_id: cadenaCreada.id },
-                              { user_id: c.usuario3_id, tipo: 'cadena', titulo: '🔗 Intercambio en cadena encontrado', mensaje: `Tú das el ${fmt(c.dia_que_da3)} y recibes el ${fmt(c.dia_que_pide3)}. Participantes: ${c.usuario1_nombre} y ${c.usuario2_nombre}. Confirma para completar.`, referencia_id: cadenaCreada.id },
-                            ])
-                            const emails = await Promise.all([
-                              supabase.rpc('get_user_email', { p_user_id: c.usuario1_id }),
-                              supabase.rpc('get_user_email', { p_user_id: c.usuario2_id }),
-                              supabase.rpc('get_user_email', { p_user_id: c.usuario3_id }),
-                            ])
-                            const asunto = '🔗 Intercambio en cadena encontrado - DescansApp'
-                            if (emails[0].data) await enviarEmail(emails[0].data, asunto, templateNotificacion('🔗 Intercambio en cadena encontrado', `Tú das el ${fmt(c.dia_que_da1)} y recibes el ${fmt(c.dia_que_pide1)}. Participantes: ${c.usuario2_nombre} y ${c.usuario3_nombre}. Entra en DescansApp para confirmar.`))
-                            if (emails[1].data) await enviarEmail(emails[1].data, asunto, templateNotificacion('🔗 Intercambio en cadena encontrado', `Tú das el ${fmt(c.dia_que_da2)} y recibes el ${fmt(c.dia_que_pide2)}. Participantes: ${c.usuario1_nombre} y ${c.usuario3_nombre}. Entra en DescansApp para confirmar.`))
-                            if (emails[2].data) await enviarEmail(emails[2].data, asunto, templateNotificacion('🔗 Intercambio en cadena encontrado', `Tú das el ${fmt(c.dia_que_da3)} y recibes el ${fmt(c.dia_que_pide3)}. Participantes: ${c.usuario1_nombre} y ${c.usuario2_nombre}. Entra en DescansApp para confirmar.`))
-                          }
-                          setCadenas(prev => prev.filter((_, idx) => idx !== i))
-                        }}>
-                        📨 NOTIFICAR A LOS 3
-                      </button>
-                    )}
-                    </div>
-                  </div>
-                ))}
-              </>
-            )}
-            <div className="modal-btns">
-              <button className="btn-gris" onClick={() => setModalCadenas(false)}>CERRAR</button>
-            </div>
-          </div>
-        </div>
-      )}
 {/* MODAL: Soltar día */}
       {modalSoltar && (
         <div className="overlay" onClick={() => setModalSoltar(false)}>
@@ -1040,7 +1171,6 @@ const idFinal = diaOfrecidoId || diaOfrecidoIdFallback
 <div className="barra-movil">
        <button style={{ background: '#f5c518', color: '#0f0f0f', fontSize: '0.85rem' }} onClick={() => setModalNueva(true)}>+ SOLICITUD</button>
         <button style={{ background: '#fb923c', color: '#0f0f0f', fontSize: '0.85rem' }} onClick={() => setModalSoltar(true)}>− SOLTAR DÍA</button>
-        <button style={{ background: '#a78bfa', color: '#0f0f0f', fontSize: '0.85rem' }} onClick={buscarCadenas}>🔗 CADENAS</button>
       </div>
     </>
   )

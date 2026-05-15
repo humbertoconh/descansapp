@@ -161,13 +161,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <div key={n.id} className={`notif-item${!n.leida ? ' no-leida' : ''}`} onClick={() => marcarLeida(n)}>
             <div className="notif-titulo">{n.titulo}</div>
             <div className="notif-mensaje">{n.mensaje}</div>
-            {n.tipo === 'cadena' && n.referencia_id && (
-              <button
-                style={{ marginTop: '0.4rem', background: '#34d399', color: '#0f0f0f', border: 'none', padding: '0.4rem 0.8rem', fontFamily: "'Bebas Neue', sans-serif", fontSize: '0.75rem', letterSpacing: '1px', cursor: 'pointer', borderRadius: '2px', minHeight: '36px', touchAction: 'manipulation' }}
-                onClick={async (e) => { e.stopPropagation(); e.preventDefault(); const { data: { user } } = await supabase.auth.getUser(); if (user) { await supabase.rpc('confirmar_cadena', { p_cadena_id: n.referencia_id, p_user_id: user.id }); await marcarLeida(n) } }}
-                onTouchEnd={async (e) => { e.stopPropagation(); e.preventDefault(); const { data: { user } } = await supabase.auth.getUser(); if (user) { await supabase.rpc('confirmar_cadena', { p_cadena_id: n.referencia_id, p_user_id: user.id }); await marcarLeida(n) } }}
-              >✓ CONFIRMAR CADENA</button>
-            )}
+            
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.2rem' }}>
               <div className="notif-fecha">{new Date(n.created_at).toLocaleDateString('es-ES')}</div>
               {esBorrable(n) && (

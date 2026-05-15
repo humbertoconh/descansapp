@@ -111,11 +111,11 @@ function CalendarioContent() {
     // Cargar intercambios confirmados en los últimos 10 días
     const hace10 = new Date()
     hace10.setDate(hace10.getDate() - 10)
-    const { data: sols_rec } = await supabase
+   const { data: sols_rec } = await supabase
       .from('solicitudes')
       .select('*, profiles(nombre, apellidos, chapa)')
       .eq('solicitante_id', user.id)
-      .eq('estado', 'completada')
+      .in('estado', ['completada', 'esperando_confirmacion'])
       .gte('updated_at', hace10.toISOString())
       .order('updated_at', { ascending: false })
     const { data: acepts_rec } = await supabase
@@ -124,13 +124,11 @@ function CalendarioContent() {
       .eq('aceptante_id', user.id)
       .gte('created_at', hace10.toISOString())
       .order('created_at', { ascending: false })
-    // Combinar: soy solicitante confirmado
     const recList: any[] = []
     for (const s of sols_rec || []) {
       const acept = (await supabase.from('aceptaciones').select('*, profiles(nombre, apellidos, chapa, telefono)').eq('solicitud_id', s.id).single()).data
-      if (acept) recList.push({ tipo: 'solicitante', dia: s.dia_pedido, companyero: acept.profiles, fecha: s.updated_at })
+      if (acept) recList.push({ tipo: s.estado === 'esperando_confirmacion' ? 'pendiente' : 'solicitante', dia: s.dia_pedido, companyero: acept.profiles, fecha: s.updated_at })
     }
-    // Soy aceptante confirmado
     for (const a of acepts_rec || []) {
       const sol = (a as any).solicitudes
       if (sol && sol.solicitante_id !== user.id) {
@@ -769,9 +767,15 @@ return (
                 {recientes.map((r, i) => (
                   <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', background: '#f5f0eb', border: '1px solid #e0d8d0', borderLeft: '3px solid #34d399', borderRadius: '3px', padding: '0.6rem 0.75rem', flexWrap: 'wrap' }}>
                     <div style={{ fontSize: '0.82rem', color: '#4a4038' }}>
-                      <div style={{ fontWeight: 600, color: '#1a1612' }}>{r.companyero?.nombre} {r.companyero?.apellidos} <span style={{ color: '#8a8070', fontWeight: 400 }}>chapa {r.companyero?.chapa}</span></div>
+                      <div style={{ fontWeight: 600, color: '#1a1612' }}>
+                        {r.tipo === 'pendiente' && <span style={{ color: '#f5c518', marginRight: '0.4rem' }}>🟡</span>}
+                        {r.tipo === 'solicitante' && <span style={{ color: '#34d399', marginRight: '0.4rem' }}>✅</span>}
+                        {r.tipo === 'aceptante' && <span style={{ color: '#34d399', marginRight: '0.4rem' }}>✅</span>}
+                        {r.companyero?.nombre} {r.companyero?.apellidos} <span style={{ color: '#8a8070', fontWeight: 400 }}>chapa {r.companyero?.chapa}</span>
+                      </div>
                       <div style={{ fontSize: '0.75rem', color: '#8a8070', marginTop: '0.2rem' }}>
                         Día: <strong style={{ color: '#c4a520' }}>{r.dia?.split('-').reverse().join('/')}</strong> · {new Date(r.fecha).toLocaleDateString('es-ES', { day: '2-digit', month: 'short' })}
+                        {r.tipo === 'pendiente' && <span style={{ color: '#f5c518', marginLeft: '0.4rem', fontWeight: 600 }}>· Pendiente de confirmar</span>}
                       </div>
                     </div>
                     {r.companyero?.telefono && (

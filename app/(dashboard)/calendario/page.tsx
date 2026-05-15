@@ -49,6 +49,10 @@ function CalendarioContent() {
   const [cadenasPendientes, setCadenasPendientes] = useState<any[]>([])
   const [confirmandoCadena, setConfirmandoCadena] = useState<string | null>(null)
   const [esAdmin, setEsAdmin] = useState(false)
+  const [modoAdmin, setModoAdmin] = useState(false)
+  const [grupoAdmin, setGrupoAdmin] = useState('')
+  const [todosGrupos, setTodosGrupos] = useState<string[]>([])
+  const [miGrupo, setMiGrupo] = useState('')
   const [guardando, setGuardando] = useState(false)
   const [modalAceptar, setModalAceptar] = useState<Solicitud | null>(null)
   const [aceptaciones, setAceptaciones] = useState<any[]>([])
@@ -60,13 +64,20 @@ function CalendarioContent() {
   const [apuntando, setApuntando] = useState(false)
   const [diaParam, setDiaParam] = useState<string | null>(null)
   const [listaEspera, setListaEspera] = useState<any[]>([])
-  const cargar = async () => {
+  const cargar = async (grupoForzado?: string) => {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
     setMiId(user.id)
     const { data: miPerfil } = await supabase.from('profiles').select('grupo').eq('id', user.id).single()
     if (!miPerfil) return
-    const { data: perfiles } = await supabase.from('profiles').select('*').eq('grupo', miPerfil.grupo)
+    setMiGrupo(miPerfil.grupo)
+    // Cargar todos los grupos disponibles (solo una vez)
+    const { data: gruposData } = await supabase.from('profiles').select('grupo').not('grupo', 'is', null)
+    const grupos = [...new Set((gruposData || []).map((p: any) => p.grupo))].sort() as string[]
+    setTodosGrupos(grupos)
+    // Usar grupo forzado (modo admin) o el propio
+    const grupoActivo = grupoForzado || miPerfil.grupo
+    const { data: perfiles } = await supabase.from('profiles').select('*').eq('grupo', grupoActivo)
     setCompanyeros(perfiles || [])
     const ids = (perfiles || []).map((p: any) => p.id)
     const { data: sols } = await supabase
@@ -111,35 +122,52 @@ function CalendarioContent() {
     // Cargar intercambios confirmados en los últimos 10 días
     const hace10 = new Date()
     hace10.setDate(hace10.getDate() - 10)
-    const { data: sols_rec } = await supabase
+   const { data: sols_rec } = await supabase
       .from('solicitudes')
       .select('*, profiles(nombre, apellidos, chapa)')
       .eq('solicitante_id', user.id)
-      .eq('estado', 'completada')
+      .in('estado', ['completada', 'esperando_confirmacion'])
       .gte('updated_at', hace10.toISOString())
       .order('updated_at', { ascending: false })
     const { data: acepts_rec } = await supabase
       .from('aceptaciones')
-      .select('*, profiles(nombre, apellidos, chapa), solicitudes!inner(dia_pedido, solicitante_id, profiles(nombre, apellidos, chapa, telefono))')
+      .select('*, profiles(nombre, apellidos, chapa), solicitudes!inner(dia_pedido, estado, solicitante_id, profiles(nombre, apellidos, chapa, telefono))')
       .eq('aceptante_id', user.id)
       .gte('created_at', hace10.toISOString())
       .order('created_at', { ascending: false })
-    // Combinar: soy solicitante confirmado
     const recList: any[] = []
     for (const s of sols_rec || []) {
       const acept = (await supabase.from('aceptaciones').select('*, profiles(nombre, apellidos, chapa, telefono)').eq('solicitud_id', s.id).single()).data
-      if (acept) recList.push({ tipo: 'solicitante', dia: s.dia_pedido, companyero: acept.profiles, fecha: s.updated_at })
+      if (acept) recList.push({ tipo: s.estado === 'esperando_confirmacion' ? 'pendiente' : 'solicitante', dia: s.dia_pedido, companyero: acept.profiles, fecha: s.updated_at })
     }
-    // Soy aceptante confirmado
     for (const a of acepts_rec || []) {
       const sol = (a as any).solicitudes
       if (sol && sol.solicitante_id !== user.id) {
-        recList.push({ tipo: 'aceptante', dia: sol.dia_pedido, companyero: sol.profiles, fecha: a.created_at })
+        const estadoSol = (a as any).solicitudes?.estado
+        recList.push({ tipo: estadoSol === 'completada' ? 'aceptante' : 'pendiente_otro', dia: sol.dia_pedido, companyero: sol.profiles, fecha: a.created_at })
       }
     }
     recList.sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime())
     setRecientes(recList.slice(0, 10))
     setLoading(false)
+  }
+
+  const cambiarGrupoAdmin = (grupo: string) => {
+    setGrupoAdmin(grupo)
+    cargar(grupo)
+  }
+
+  const activarModoAdmin = () => {
+    setModoAdmin(true)
+    const primerGrupo = todosGrupos[0] || miGrupo
+    setGrupoAdmin(primerGrupo)
+    cargar(primerGrupo)
+  }
+
+  const desactivarModoAdmin = () => {
+    setModoAdmin(false)
+    setGrupoAdmin('')
+    cargar(miGrupo)
   }
 
   useEffect(() => {
@@ -162,9 +190,16 @@ function CalendarioContent() {
     }
   }, [])
 
-  useEffect(() => {
+ useEffect(() => {
     if (diaParam && !loading) {
-      abrirDia(diaParam)
+      const tengoAlgoQueHacer = solicitudes.some(s =>
+        s.dia_pedido === diaParam &&
+        s.solicitante_id === miId &&
+        s.estado === 'esperando_confirmacion'
+      )
+      if (tengoAlgoQueHacer) {
+        abrirDia(diaParam)
+      }
       setDiaParam(null)
     }
   }, [diaParam, loading])
@@ -214,6 +249,10 @@ function CalendarioContent() {
     if (!diaPedido) return
     const ofrecidos = diasOfrecidos.filter(d => d !== '')
     if (ofrecidos.length === 0) return
+    if (ofrecidos.includes(diaPedido)) {
+  alert('No puedes ofrecer el mismo día que pides.')
+  return
+}
     setGuardando(true)
     const { data: sol } = await supabase
       .from('solicitudes')
@@ -259,13 +298,17 @@ function CalendarioContent() {
             referencia_id: cadena.id, leida: false
           })
           // Construir bloque de participantes con WhatsApp (líneas separadas)
-          const otrosBloque = perfiles
+         const otrosBloque = perfiles
             .map((p: any, idx: number) => ({ p, idx }))
             .filter((x: any) => x.idx !== i)
-            .map((x: any) => {
+            .map((x: any, relIdx: number) => {
               const nombreCompleto = `${x.p.nombre} ${x.p.apellidos}`
               const wa = x.p.telefono ? `<br>${waBtn(x.p.telefono, nombreCompleto)}` : ''
-              return `<div style="margin:8px 0;padding:8px 0;border-top:1px solid #e0d8d0"><strong>${nombreCompleto}</strong> (chapa ${x.p.chapa})${wa}</div>`
+              const solOtro = sols[x.idx]
+              const solSiguienteOtro = sols[(x.idx + 1) % uids.length]
+              const queriaOtro = fmt(solOtro?.dia_pedido)
+              const dabaOtro = fmt(solSiguienteOtro?.dia_pedido)
+              return `<div style="margin:8px 0;padding:8px 0;border-top:1px solid #e0d8d0"><strong>${nombreCompleto}</strong> (chapa ${x.p.chapa})<br><span style="font-size:13px;color:#6a6058">Quería: ${queriaOtro} · Daba: ${dabaOtro}</span>${wa}</div>`
             }).join('')
           const { data: emailData } = await supabase.rpc('get_user_email', { p_user_id: uid })
           if (emailData) {
@@ -531,10 +574,14 @@ const soltarDia = async (fecha: string) => {
           const otrosBloque = perfiles
             .map((p: any, idx: number) => ({ p, idx }))
             .filter((x: any) => x.idx !== i)
-            .map((x: any) => {
+            .map((x: any, relIdx: number) => {
               const nombreCompleto = `${x.p.nombre} ${x.p.apellidos}`
               const wa = x.p.telefono ? `<br>${waBtn(x.p.telefono, nombreCompleto)}` : ''
-              return `<div style="margin:8px 0;padding:8px 0;border-top:1px solid #e0d8d0"><strong>${nombreCompleto}</strong> (chapa ${x.p.chapa})${wa}</div>`
+              const solOtro = sols[x.idx]
+              const solSiguienteOtro = sols[(x.idx + 1) % uids.length]
+              const queriaOtro = fmt(solOtro?.dia_pedido)
+              const dabaOtro = fmt(solSiguienteOtro?.dia_pedido)
+              return `<div style="margin:8px 0;padding:8px 0;border-top:1px solid #e0d8d0"><strong>${nombreCompleto}</strong> (chapa ${x.p.chapa})<br><span style="font-size:13px;color:#6a6058">Quería: ${queriaOtro} · Daba: ${dabaOtro}</span>${wa}</div>`
             }).join('')
           const { data: emailData } = await supabase.rpc('get_user_email', { p_user_id: uid })
           if (emailData) {
@@ -708,14 +755,12 @@ return (
           <div>
             <h1>DESCANSOS</h1>
             <p>Pincha cualquier día para ver o crear solicitudes de intercambio</p>
-{companyeros.find(c => c.id === miId)?.grupo && (
-  <div style={{ marginTop: '0.4rem', display: 'inline-flex', alignItems: 'center', gap: '0.5rem', background: '#fff', border: '1px solid #e0d8d0', borderRadius: '3px', padding: '0.3rem 0.8rem' }}>
-    <span style={{ fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '1.5px', color: '#8a8070' }}>Tu grupo:</span>
-    <span style={{ fontFamily: 'Bebas Neue, sans-serif', fontSize: '1rem', letterSpacing: '2px', color: '#c4a520' }}>
-      {companyeros.find(c => c.id === miId)?.grupo}
+<div style={{ marginTop: '0.4rem', display: 'inline-flex', alignItems: 'center', gap: '0.5rem', background: '#fff', border: `1px solid ${modoAdmin ? '#f5c518' : '#e0d8d0'}`, borderRadius: '3px', padding: '0.3rem 0.8rem' }}>
+    <span style={{ fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '1.5px', color: '#8a8070' }}>{modoAdmin ? 'Viendo grupo:' : 'Tu grupo:'}</span>
+    <span style={{ fontFamily: 'Bebas Neue, sans-serif', fontSize: '1rem', letterSpacing: '2px', color: modoAdmin ? '#f5c518' : '#c4a520' }}>
+      {modoAdmin ? grupoAdmin : companyeros.find(c => c.id === miId)?.grupo}
     </span>
   </div>
-)}
           </div>
           <div className="header-right">
             <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
@@ -747,6 +792,35 @@ return (
             </div>
           </div>
         </div>
+        {/* MODO ADMIN: selector de grupo */}
+        {esAdmin && (
+          <div style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+            {!modoAdmin ? (
+              <button
+                onClick={activarModoAdmin}
+                style={{ background: '#2a2010', color: '#f5c518', border: '1px solid #f5c518', padding: '0.4rem 1rem', fontFamily: "'Bebas Neue', sans-serif", fontSize: '0.85rem', letterSpacing: '2px', cursor: 'pointer', borderRadius: '2px' }}>
+                👁 MODO ADMIN
+              </button>
+            ) : (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', background: '#2a2010', border: '1px solid #f5c518', borderRadius: '3px', padding: '0.4rem 0.75rem', flexWrap: 'wrap' }}>
+                <span style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '0.85rem', letterSpacing: '2px', color: '#f5c518' }}>👁 ADMIN</span>
+                <select
+                  value={grupoAdmin}
+                  onChange={e => cambiarGrupoAdmin(e.target.value)}
+                  style={{ background: '#1a1612', color: '#f5c518', border: '1px solid #f5c518', padding: '0.3rem 0.5rem', fontFamily: "'Bebas Neue', sans-serif", fontSize: '0.85rem', letterSpacing: '1px', cursor: 'pointer', borderRadius: '2px', outline: 'none' }}>
+                  {todosGrupos.map(g => (
+                    <option key={g} value={g}>{g}</option>
+                  ))}
+                </select>
+                <button
+                  onClick={desactivarModoAdmin}
+                  style={{ background: 'none', color: '#8a8070', border: 'none', cursor: 'pointer', fontSize: '0.8rem', fontFamily: "'Bebas Neue', sans-serif", letterSpacing: '1px' }}>
+                  ✕ SALIR
+                </button>
+              </div>
+            )}
+          </div>
+        )}
         {/* INTERCAMBIOS RECIENTES */}
         {recientes.length > 0 && (
           <div style={{ marginBottom: '1.5rem' }}>
@@ -759,11 +833,20 @@ return (
             {recientesAbierto && (
               <div style={{ background: '#fff', border: '1px solid #e0d8d0', borderRadius: '4px', padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                 {recientes.map((r, i) => (
-                  <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', background: '#f5f0eb', border: '1px solid #e0d8d0', borderLeft: '3px solid #34d399', borderRadius: '3px', padding: '0.6rem 0.75rem', flexWrap: 'wrap' }}>
+                  <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', background: '#f5f0eb', border: '1px solid #e0d8d0', borderLeft: `3px solid ${r.tipo === 'pendiente' || r.tipo === 'pendiente_otro' ? '#f5c518' : '#34d399'}`, borderRadius: '3px', padding: '0.6rem 0.75rem', flexWrap: 'wrap', cursor: 'pointer' }}
+onClick={() => { setRecientesAbierto(false); abrirDia(r.dia) }}>
                     <div style={{ fontSize: '0.82rem', color: '#4a4038' }}>
-                      <div style={{ fontWeight: 600, color: '#1a1612' }}>{r.companyero?.nombre} {r.companyero?.apellidos} <span style={{ color: '#8a8070', fontWeight: 400 }}>chapa {r.companyero?.chapa}</span></div>
+                      <div style={{ fontWeight: 600, color: '#1a1612' }}>
+                        {r.tipo === 'pendiente' && <span style={{ color: '#f5c518', marginRight: '0.4rem' }}>🟡</span>}
+                        {r.tipo === 'pendiente_otro' && <span style={{ color: '#f5c518', marginRight: '0.4rem' }}>🟡</span>}
+                        {r.tipo === 'solicitante' && <span style={{ color: '#34d399', marginRight: '0.4rem' }}>✅</span>}
+                        {r.tipo === 'aceptante' && <span style={{ color: '#34d399', marginRight: '0.4rem' }}>✅</span>}
+                        {r.companyero?.nombre} {r.companyero?.apellidos} <span style={{ color: '#8a8070', fontWeight: 400 }}>chapa {r.companyero?.chapa}</span>
+                      </div>
                       <div style={{ fontSize: '0.75rem', color: '#8a8070', marginTop: '0.2rem' }}>
                         Día: <strong style={{ color: '#c4a520' }}>{r.dia?.split('-').reverse().join('/')}</strong> · {new Date(r.fecha).toLocaleDateString('es-ES', { day: '2-digit', month: 'short' })}
+                        {r.tipo === 'pendiente' && <span style={{ color: '#f5c518', marginLeft: '0.4rem', fontWeight: 600 }}>· Pendiente de confirmar</span>}
+                        {r.tipo === 'pendiente_otro' && <span style={{ color: '#f5c518', marginLeft: '0.4rem', fontWeight: 600 }}>· Esperando que confirme {r.companyero?.nombre}</span>}
                       </div>
                     </div>
                     {r.companyero?.telefono && (
@@ -926,7 +1009,7 @@ return (
                       <div style={{ width:8, height:8, borderRadius:'50%', background: colorPorUsuario[s.solicitante_id], flexShrink:0 }} />
                       {s.profiles?.nombre} {s.profiles?.apellidos}
                       {s.solicitante_id === miId && <span className="tag tag-yo">YO</span>}
-                      {s.estado === 'esperando_confirmacion' && <span className="tag tag-espera">ESPERANDO</span>}
+                      {s.estado === 'esperando_confirmacion' && <span className="tag tag-espera">ACUERDO PENDIENTE</span>}
                       {s.estado === 'en_cadena' && <span className="tag" style={{ background: '#f5f0ff', color: '#5b21b6' }}>🔗 EN CADENA</span>}
                     </div>
                     <div className="sol-ofrece">Ofrece a cambio:</div>

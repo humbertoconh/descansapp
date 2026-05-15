@@ -766,7 +766,8 @@ return (
             {recientesAbierto && (
               <div style={{ background: '#fff', border: '1px solid #e0d8d0', borderRadius: '4px', padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                 {recientes.map((r, i) => (
-                  <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', background: '#f5f0eb', border: '1px solid #e0d8d0', borderLeft: '3px solid #34d399', borderRadius: '3px', padding: '0.6rem 0.75rem', flexWrap: 'wrap' }}>
+                  <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', background: '#f5f0eb', border: '1px solid #e0d8d0', borderLeft: `3px solid ${r.tipo === 'pendiente' || r.tipo === 'pendiente_otro' ? '#f5c518' : '#34d399'}`, borderRadius: '3px', padding: '0.6rem 0.75rem', flexWrap: 'wrap', cursor: 'pointer' }}
+onClick={() => { setRecientesAbierto(false); abrirDia(r.dia) }}>
                     <div style={{ fontSize: '0.82rem', color: '#4a4038' }}>
                       <div style={{ fontWeight: 600, color: '#1a1612' }}>
                         {r.tipo === 'pendiente' && <span style={{ color: '#f5c518', marginRight: '0.4rem' }}>🟡</span>}

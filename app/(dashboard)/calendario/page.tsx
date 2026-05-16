@@ -147,6 +147,40 @@ function CalendarioContent() {
         recList.push({ tipo: estadoSol === 'completada' ? 'aceptante' : 'pendiente_otro', dia: sol.dia_pedido, companyero: sol.profiles, fecha: a.created_at })
       }
     }
+    // Cadenas completadas en los últimos 10 días
+    const { data: cadenas_rec } = await supabase
+      .from('cadenas_intercambio')
+      .select(`
+        *,
+        p1:usuario1_id(nombre, apellidos, chapa, telefono),
+        p2:usuario2_id(nombre, apellidos, chapa, telefono),
+        p3:usuario3_id(nombre, apellidos, chapa, telefono),
+        p4:usuario4_id(nombre, apellidos, chapa, telefono),
+        s1:solicitud1_id(dia_pedido),
+        s2:solicitud2_id(dia_pedido),
+        s3:solicitud3_id(dia_pedido),
+        s4:solicitud4_id(dia_pedido)
+      `)
+      .eq('estado', 'confirmada')
+      .or(`usuario1_id.eq.${user.id},usuario2_id.eq.${user.id},usuario3_id.eq.${user.id},usuario4_id.eq.${user.id}`)
+      .gte('updated_at', hace10.toISOString())
+    for (const cadena of cadenas_rec || []) {
+      const uids = [cadena.usuario1_id, cadena.usuario2_id, cadena.usuario3_id, cadena.usuario4_id].filter(Boolean)
+      const perfiles = [cadena.p1, cadena.p2, cadena.p3, cadena.p4].filter(Boolean)
+      const sols = [cadena.s1, cadena.s2, cadena.s3, cadena.s4].filter(Boolean)
+      const miIdx = uids.indexOf(user.id)
+      if (miIdx === -1) continue
+      const otros = perfiles.filter((_: any, i: number) => i !== miIdx)
+      const miSol = sols[miIdx]
+      const miSiguiente = sols[(miIdx + 1) % uids.length]
+      recList.push({
+        tipo: 'cadena',
+        dia: miSol?.dia_pedido,
+        diaDa: miSiguiente?.dia_pedido,
+        companyeros: otros,
+        fecha: cadena.updated_at
+      })
+    }
     recList.sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime())
     setRecientes(recList.slice(0, 10))
     setLoading(false)
@@ -833,6 +867,30 @@ return (
             {recientesAbierto && (
               <div style={{ background: '#fff', border: '1px solid #e0d8d0', borderRadius: '4px', padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                 {recientes.map((r, i) => (
+                  r.tipo === 'cadena' ? (
+                    <div key={i} style={{ background: '#f5f0ff', border: '1px solid #a78bfa', borderLeft: '3px solid #a78bfa', borderRadius: '3px', padding: '0.6rem 0.75rem', marginBottom: '0' }}>
+                      <div style={{ fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '1px', color: '#a78bfa', fontWeight: 600, marginBottom: '0.4rem' }}>
+                        🔗 Cadena completada · {new Date(r.fecha).toLocaleDateString('es-ES', { day: '2-digit', month: 'short' })}
+                      </div>
+                      <div style={{ fontSize: '0.75rem', color: '#8a8070', marginBottom: '0.4rem' }}>
+                        Días: <strong style={{ color: '#a78bfa' }}>{r.dias?.join(' · ')}</strong>
+                      </div>
+                      {r.companyeros?.map((p: any, idx: number) => (
+                        <div key={idx} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem', padding: '0.3rem 0', borderTop: idx === 0 ? '1px solid #e0d8d0' : 'none' }}>
+                          <div style={{ fontSize: '0.82rem' }}>
+                            <strong style={{ color: '#1a1612' }}>{p.nombre} {p.apellidos}</strong>
+                            <span style={{ color: '#8a8070', marginLeft: '0.4rem', fontWeight: 400 }}>chapa {p.chapa}</span>
+                          </div>
+                          {p.telefono && (
+                            <a href={`https://wa.me/34${p.telefono.replace(/\s/g, '')}`} target="_blank" rel="noopener noreferrer"
+                              style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: '#25D366', color: '#fff', padding: '4px 8px', borderRadius: '4px', textDecoration: 'none', fontWeight: 600, fontSize: '0.72rem', whiteSpace: 'nowrap', flexShrink: 0 }}>
+                              <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" width="12" height="12" style={{ verticalAlign: 'middle' }} /> WhatsApp
+                            </a>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
                   <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', background: '#f5f0eb', border: '1px solid #e0d8d0', borderLeft: `3px solid ${r.tipo === 'pendiente' || r.tipo === 'pendiente_otro' ? '#f5c518' : '#34d399'}`, borderRadius: '3px', padding: '0.6rem 0.75rem', flexWrap: 'wrap', cursor: 'pointer' }}
 onClick={() => { setRecientesAbierto(false); abrirDia(r.dia) }}>
                     <div style={{ fontSize: '0.82rem', color: '#4a4038' }}>
@@ -857,6 +915,7 @@ onClick={() => { setRecientesAbierto(false); abrirDia(r.dia) }}>
                       </a>
                     )}
                   </div>
+                  )
                 ))}
               </div>
             )}

@@ -181,6 +181,24 @@ function CalendarioContent() {
         fecha: cadena.updated_at
       })
     }
+    // Días sueltos asignados en los últimos 10 días
+    const { data: sueltos_rec } = await supabase
+      .from('dias_sueltos')
+      .select('*, dueno:user_id(nombre, apellidos, chapa, telefono), receptor:asignado_a(nombre, apellidos, chapa, telefono)')
+      .eq('estado', 'asignado')
+      .or(`user_id.eq.${user.id},asignado_a.eq.${user.id}`)
+      .gte('created_at', hace10.toISOString())
+    for (const s of sueltos_rec || []) {
+      const yoSolte = s.user_id === user.id
+      const companyero = yoSolte ? s.receptor : s.dueno
+      const fecha = s.fecha?.split('T')[0] || s.fecha
+      recList.push({
+        tipo: yoSolte ? 'solte' : 'recibi',
+        dia: fecha,
+        companyero,
+        fecha: s.created_at
+      })
+    }
     recList.sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime())
     setRecientes(recList.slice(0, 10))
     setLoading(false)
@@ -896,6 +914,8 @@ onClick={() => { setRecientesAbierto(false); abrirDia(r.dia) }}>
                     <div style={{ fontSize: '0.82rem', color: '#4a4038' }}>
                       <div style={{ fontWeight: 600, color: '#1a1612' }}>
                         {r.tipo === 'pendiente' && <span style={{ color: '#f5c518', marginRight: '0.4rem' }}>🟡</span>}
+                        {r.tipo === 'solte' && <span style={{ color: '#fb923c', marginRight: '0.4rem' }}>📤</span>}
+{r.tipo === 'recibi' && <span style={{ color: '#34d399', marginRight: '0.4rem' }}>📥</span>}
                         {r.tipo === 'pendiente_otro' && <span style={{ color: '#f5c518', marginRight: '0.4rem' }}>🟡</span>}
                         {r.tipo === 'solicitante' && <span style={{ color: '#34d399', marginRight: '0.4rem' }}>✅</span>}
                         {r.tipo === 'aceptante' && <span style={{ color: '#34d399', marginRight: '0.4rem' }}>✅</span>}
@@ -905,6 +925,8 @@ onClick={() => { setRecientesAbierto(false); abrirDia(r.dia) }}>
                         Día: <strong style={{ color: '#c4a520' }}>{r.dia?.split('-').reverse().join('/')}</strong> · {new Date(r.fecha).toLocaleDateString('es-ES', { day: '2-digit', month: 'short' })}
                         {r.tipo === 'pendiente' && <span style={{ color: '#f5c518', marginLeft: '0.4rem', fontWeight: 600 }}>· Pendiente de confirmar</span>}
                         {r.tipo === 'pendiente_otro' && <span style={{ color: '#f5c518', marginLeft: '0.4rem', fontWeight: 600 }}>· Esperando que confirme {r.companyero?.nombre}</span>}
+                        {r.tipo === 'solte' && <span style={{ color: '#fb923c', marginLeft: '0.4rem', fontWeight: 600 }}>· Día soltado</span>}
+{r.tipo === 'recibi' && <span style={{ color: '#34d399', marginLeft: '0.4rem', fontWeight: 600 }}>· Día recibido</span>}
                       </div>
                     </div>
                     {r.companyero?.telefono && (

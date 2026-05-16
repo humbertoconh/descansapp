@@ -173,10 +173,10 @@ function CalendarioContent() {
       const otros = perfiles.filter((_: any, i: number) => i !== miIdx)
       const miSol = sols[miIdx]
       const miSiguiente = sols[(miIdx + 1) % uids.length]
+      const dias = sols.map((s: any) => s?.dia_pedido?.split('-').reverse().join('/')).filter(Boolean)
       recList.push({
         tipo: 'cadena',
-        dia: miSol?.dia_pedido,
-        diaDa: miSiguiente?.dia_pedido,
+        dias,
         companyeros: otros,
         fecha: cadena.updated_at
       })
@@ -883,8 +883,8 @@ return (
                           </div>
                           {p.telefono && (
                             <a href={`https://wa.me/34${p.telefono.replace(/\s/g, '')}`} target="_blank" rel="noopener noreferrer"
-                              style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: '#25D366', color: '#fff', padding: '4px 8px', borderRadius: '4px', textDecoration: 'none', fontWeight: 600, fontSize: '0.72rem', whiteSpace: 'nowrap', flexShrink: 0 }}>
-                              <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" width="12" height="12" style={{ verticalAlign: 'middle' }} /> WhatsApp
+                              style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: '#25D366', color: '#fff', padding: '6px 12px', borderRadius: '6px', textDecoration: 'none', fontWeight: 600, fontSize: '0.82rem', whiteSpace: 'nowrap', flexShrink: 0 }}>
+                              <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" width="16" height="16" style={{ verticalAlign: 'middle' }} /> WhatsApp
                             </a>
                           )}
                         </div>
